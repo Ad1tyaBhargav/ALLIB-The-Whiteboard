@@ -1,0 +1,11 @@
+add more sockets for  undone  redo transform
+
+avatar for players....set upload route for cloudinary for uploading avatar imgs and  store url in DB wtih   users collection
+
+add kicking and banning option for admin
+
+board img for preview....setup board img from board data to give preview on board menu
+
+avatar and cursor  sync
+
+Auto connect  on refresh
