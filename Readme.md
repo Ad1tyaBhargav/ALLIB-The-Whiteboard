@@ -15,7 +15,7 @@ cd my-app
 npm i 
 npm run dev
 ```
-- App will run on [https://localhost:5173]
+- App will run on [http://localhost:5173](http://localhost:5173)
 
 ## Basic structure
 
