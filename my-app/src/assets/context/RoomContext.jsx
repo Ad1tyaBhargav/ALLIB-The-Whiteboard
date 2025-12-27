@@ -48,39 +48,39 @@ export function RoomProvider({ children, toastRef }) {
     localStorage.removeItem("lastRoomCode");
   };
 
-//   useEffect(() => {
-//   const tryRejoin = () => {
-//     const lastRoom = localStorage.getItem("lastRoomCode");
-//     if (!lastRoom) return;
+  //   useEffect(() => {
+  //   const tryRejoin = () => {
+  //     const lastRoom = localStorage.getItem("lastRoomCode");
+  //     if (!lastRoom) return;
 
-//     socket.emit("join-room", { roomCode: lastRoom }, (res) => {
-//       if (!res?.success) {
-//         console.warn("Auto rejoin failed:", res?.message);
+  //     socket.emit("join-room", { roomCode: lastRoom }, (res) => {
+  //       if (!res?.success) {
+  //         console.warn("Auto rejoin failed:", res?.message);
 
-//         localStorage.removeItem("lastRoomCode");
-//         resetRoomState(); 
-//         return;
-//       }
+  //         localStorage.removeItem("lastRoomCode");
+  //         resetRoomState(); 
+  //         return;
+  //       }
 
-//       console.log("Auto rejoined room:", lastRoom);
-//     });
-//   };
+  //       console.log("Auto rejoined room:", lastRoom);
+  //     });
+  //   };
 
-//   if (socket.connected) {
-//     tryRejoin();
-//   }
+  //   if (socket.connected) {
+  //     tryRejoin();
+  //   }
 
-//   socket.on("connect", tryRejoin);
+  //   socket.on("connect", tryRejoin);
 
-//   return () => {
-//     socket.off("connect", tryRejoin);
-//   };
-// }, []);
+  //   return () => {
+  //     socket.off("connect", tryRejoin);
+  //   };
+  // }, []);
 
 
 
   //all sockets
- 
+
 
   useEffect(() => {
     if (!socket) return;
@@ -103,21 +103,21 @@ export function RoomProvider({ children, toastRef }) {
     };
 
     const handleRoomClosed = ({ message }) => {
-        showToast(
-          "warn",
-          "Room closed",
-          "Admin disconnected and did not return"
-        );
-        resetRoomState();
+      showToast(
+        "warn",
+        "Room closed",
+        "Admin disconnected and did not return"
+      );
+      resetRoomState();
     }
 
     const handleBoardSync = (data) => {
       setBoardData(data);
     };
 
-    const handleBoardDraw = (stroke) => {
-      setBoardData(prev => [...prev, stroke]);
-    };
+    // const handleBoardDraw = (stroke) => {
+    //   setBoardData(prev => [...prev, stroke]);
+    // };
 
     const handleReceiveMessage = (msg) => {
       setChats(prev => [...prev, msg]);
@@ -136,12 +136,35 @@ export function RoomProvider({ children, toastRef }) {
       showToast("success", "Admin returned", "Room unlocked");
     }
 
+    const handleStrokeStart = ({ stroke }) => {
+      setBoardData(prev => [...prev, stroke]);
+    };
+
+    const handleStrokeUpdate = ({ id, points }) => {
+      setBoardData(prev =>
+        prev.map(el =>
+          el.id === id ? { ...el, points } : el
+        )
+      );
+    };
+
+    const handleStrokeEnd = ({ stroke }) => {
+      setBoardData(prev =>
+        prev.map(el =>
+          el.id === stroke.id ? stroke : el
+        )
+      );
+    };
+
     socket.on("player-list", handlePlayerList);
     socket.on("user-joined", handleUserJoined);
     socket.on("user-left", handleUserLeft);
     socket.on("room-closed", handleRoomClosed);
     socket.on("board-sync", handleBoardSync);
-    socket.on("board-draw", handleBoardDraw);
+    // socket.on("board-draw", handleBoardDraw);
+    socket.on("stroke-start", handleStrokeStart);
+    socket.on("stroke-update", handleStrokeUpdate);
+    socket.on("stroke-end", handleStrokeEnd);
     socket.on("room-grace-start", handleGraceStart);
     socket.on("room-grace-cancel", handleGraceCancel);
     socket.on("receive-message", handleReceiveMessage);
@@ -152,7 +175,10 @@ export function RoomProvider({ children, toastRef }) {
       socket.off("user-left", handleUserLeft);
       socket.off("room-closed", handleRoomClosed);
       socket.off("board-sync", handleBoardSync);
-      socket.off("board-draw", handleBoardDraw);
+      // socket.off("board-draw", handleBoardDraw);
+      socket.off("stroke-start", handleStrokeStart);
+      socket.off("stroke-update", handleStrokeUpdate);
+      socket.off("stroke-end", handleStrokeEnd);
       socket.off("room-grace-start", handleGraceStart);
       socket.off("room-grace-cancel", handleGraceCancel);
       socket.off("receive-message", handleReceiveMessage);

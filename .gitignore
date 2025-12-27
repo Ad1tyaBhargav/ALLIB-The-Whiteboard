@@ -1,0 +1,45 @@
+# ========================
+# Node / MERN
+# ========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ========================
+# Environment variables
+# ========================
+.env
+.env.local
+.env.production
+
+# ========================
+# Build outputs
+# ========================
+dist/
+build/
+
+# ========================
+# Logs
+# ========================
+logs/
+*.log
+
+# ========================
+# OS / Editor
+# ========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ========================
+# Konva / Canvas temp
+# ========================
+*.tmp
+*.cache
+
+# ========================
+# Optional: MongoDB dumps
+# ========================
+dump/

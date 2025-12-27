@@ -1,22 +1,33 @@
 import Room from "../models/Room.js";
 
 export default function boardHandlers(io, socket) {
-  socket.on("board-draw", async ({ roomCode, element }) => {
-  await Room.updateOne(
-    { roomCode },
-    { $push: { boardData: element } }
-  );
+  // stroke starts (DO NOT save to DB)
+  socket.on("stroke-start", ({ roomCode, stroke }) => {
+    socket.to(roomCode).emit("stroke-start", { stroke });
+  });
 
-  socket.to(roomCode).emit("board-draw", element);
-});
+  // stroke updates (DO NOT save to DB)
+  socket.on("stroke-update", ({ roomCode, id, points }) => {
+    socket.to(roomCode).emit("stroke-update", { id, points });
+  });
 
-socket.on("clear-board", async ({ roomCode }) => {
-  await Room.updateOne(
-    { roomCode },
-    { $set: { boardData: [] } }
-  );
+  // stroke ends (SAVE ONCE)
+  socket.on("stroke-end", async ({ roomCode, stroke }) => {
+    await Room.updateOne(
+      { roomCode },
+      { $push: { boardData: stroke } }
+    );
 
-  io.to(roomCode).emit("clear-board");
-});
+    socket.to(roomCode).emit("stroke-end", { stroke });
+  });
+
+  socket.on("clear-board", async ({ roomCode }) => {
+    await Room.updateOne(
+      { roomCode },
+      { $set: { boardData: [] } }
+    );
+
+    io.to(roomCode).emit("clear-board");
+  });
 
 }

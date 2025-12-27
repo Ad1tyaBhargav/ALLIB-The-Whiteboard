@@ -11,12 +11,17 @@ export default function Board() {
   const [tool, setTool] = useState("pen");
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [selectedId, setSelectedId] = useState(null);
-  const { boardData,setBoardData,roomCode,isLocked } = useRoom()
+  const { boardData, setBoardData, roomCode, isLocked } = useRoom()
 
   const stageRef = useRef(null);
   const trRef = useRef(null);
   const isDrawing = useRef(false);
   const isPanning = useRef(false);
+  const currentStrokeRef = useRef(null);
+  const lastEmitTimeRef = useRef(0);
+  const EMIT_INTERVAL = 25;
+  const MIN_DISTANCE = 2;
+  const isSpacePressed = useRef(false);
 
   const [stageScale, setStageScale] = useState(1);
   const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
@@ -48,17 +53,21 @@ export default function Board() {
 
     // Shape creation logic
     if (tool === "pen" || tool === "eraser") {
-      setBoardData((prev) => [
-        ...prev,
-        {
-          id: `line_${prev.length + 1}`,
-          type: "line",
-          points: [pos.x, pos.y],
-          color,
-          strokeWidth,
-          tool,
-        },
-      ]);
+      const stroke = {
+        id: `line_${Date.now()}_${socket.id}`,
+        type: "line",
+        points: [pos.x, pos.y],
+        color,
+        strokeWidth,
+        tool,
+        tension: 0.5,
+      };
+
+      currentStrokeRef.current = stroke;
+
+      setBoardData(prev => [...prev, stroke]);
+
+      socket.emit("stroke-start", { roomCode, stroke });
     } else {
       // shapes
       setBoardData((prev) => [
@@ -80,42 +89,60 @@ export default function Board() {
 
   // ✅ Continue drawing
   const handleMouseMove = (e) => {
-    if (!isDrawing.current || isLocked) return;
-    const stage = stageRef.current;
+    if (!isDrawing.current || isLocked || !currentStrokeRef.current) return;
+
+    const stage = e.target.getStage();
     const point = getRelativePointer(stage);
 
-    setBoardData((prev) => {
-      const last = prev[prev.length - 1];
-      if (!last) return prev;
+    const prevStroke = currentStrokeRef.current;
+    const pts = prevStroke.points;
+    const lastX = pts[pts.length - 2];
+    const lastY = pts[pts.length - 1];
 
-      let updated;
-      if (last.type === "line" || last.tool === "eraser") {
-        updated = { ...last, points: [...last.points, point.x, point.y] };
-      } else if (last.type === "rectangle") {
-        updated = { ...last, width: point.x - last.x, height: point.y - last.y };
-      } else if (last.type === "circle") {
-        const radius = Math.sqrt((point.x - last.x) ** 2 + (point.y - last.y) ** 2);
-        updated = { ...last, radius };
-      } else if (last.type === "arrow" || last.type === "lineShape") {
-        updated = { ...last, points: [last.x, last.y, point.x, point.y] };
-      }
-      return [...prev.slice(0, -1), updated];
+    // ✅ distance-based decimation
+    const dx = point.x - lastX;
+    const dy = point.y - lastY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < MIN_DISTANCE) return;
+
+    // ✅ CREATE NEW POINTS ARRAY (CRITICAL FIX)
+    const newPoints = [...prevStroke.points, point.x, point.y];
+
+    const updatedStroke = {
+      ...prevStroke,
+      points: newPoints,
+    };
+
+    currentStrokeRef.current = updatedStroke;
+
+    setBoardData(prev => {
+      const copy = [...prev];
+      copy[copy.length - 1] = updatedStroke;
+      return copy;
     });
+
+    const now = Date.now();
+    if (now - lastEmitTimeRef.current > EMIT_INTERVAL) {
+      socket.emit("stroke-update", {
+        roomCode,
+        id: updatedStroke.id,
+        points: newPoints,
+      });
+      lastEmitTimeRef.current = now;
+    }
   };
 
-  // ✅ Stop drawing
   const handleMouseUp = () => {
-    if (!isDrawing.current) return;
+    if (!isDrawing.current || !currentStrokeRef.current) return;
 
-    isDrawing.current = false;
-
-    const last = boardData[boardData.length - 1];
-    if (!last || !roomCode) return;
-
-    socket.emit("board-draw", {
+    socket.emit("stroke-end", {
       roomCode,
-      element: last
+      stroke: currentStrokeRef.current,
     });
+
+    currentStrokeRef.current = null;
+    isDrawing.current = false;
   };
 
   // ✅ Undo / Redo
@@ -171,7 +198,8 @@ export default function Board() {
 
   // ✅ Panning
   const handleStageMouseDown = (e) => {
-    if (e.evt.code === "Space") isPanning.current = true;
+    if (isPanning.current) return;
+    if (isSpacePressed.current) isPanning.current = true;
   };
 
   const handleStageMouseUp = () => {
@@ -213,47 +241,32 @@ export default function Board() {
     }
   }, [selectedId, boardData]);
 
-  //board sockets
+  //Panning logic with keyboard bound
   useEffect(() => {
-    if (!socket) return;
+    const down = e => { if (e.code === "Space") isSpacePressed.current = true; };
+    const up = e => { if (e.code === "Space") isSpacePressed.current = false; };
 
-    const handleRemoteDraw = (element) => {
-      setBoardData(prev => [...prev, element]);
-    };
-
-    const handleBoardSync = (data) => {
-      setBoardData(data);
-      setUndone([]);
-    };
-
-    const handleClear = () => {
-      setBoardData([]);
-      setUndone([]);
-    };
-
-    socket.on("board-draw", handleRemoteDraw);
-    socket.on("board-sync", handleBoardSync);
-    socket.on("clear-board", handleClear);
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
 
     return () => {
-      socket.off("board-draw", handleRemoteDraw);
-      socket.off("board-sync", handleBoardSync);
-      socket.off("clear-board", handleClear);
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
     };
-  }, [roomCode]);
+  }, []);
 
   return (
     <div style={{ width: "100vw", height: "100vh", background: "#fff", overflow: "hidden" }}>
-      
-        <Toolbar
-          onPenChange={({ color, size }) => {
-            if (color) setColor(color);
-            if (size) setStrokeWidth(size);
-          }}
-          onToolChange={setTool}
-          clearCanvas={clearCanvas}
-        />
-      
+
+      <Toolbar
+        onPenChange={({ color, size }) => {
+          if (color) setColor(color);
+          if (size) setStrokeWidth(size);
+        }}
+        onToolChange={setTool}
+        clearCanvas={clearCanvas}
+      />
+
 
       <Stage
         ref={stageRef}
@@ -330,7 +343,7 @@ export default function Board() {
                     strokeWidth={el.strokeWidth}
                     lineCap="round"
                     lineJoin="round"
-                    tension={0.5}
+                    tension={0.6}
                     globalCompositeOperation={
                       el.tool === "eraser" ? "destination-out" : "source-over"
                     }
