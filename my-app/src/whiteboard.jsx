@@ -4,7 +4,7 @@ import AvatarCursor from './assets/components/Whiteboard/cursor';
 import Board from './assets/components/Whiteboard/Board';
 import GraceCountdown from './assets/components/Whiteboard/GraceCountdown';
 import { socket } from './socket';
-import { useEffect} from 'react';
+import { useEffect } from 'react';
 import { Toast } from 'primereact/toast';
 import { useRef } from 'react';
 import { useRoom } from './assets/context/RoomContext';
@@ -14,7 +14,7 @@ function Whiteboard({ user, logout }) {
 
   const toast = useRef(null)
   const avatar = "../avatar Sample.webp"
-  const {graceEndsAt}=useRoom()
+  const { graceEndsAt, cursors,viewport } = useRoom()
 
   useEffect(() => {
     const handleErrorMessage = (msg) => {
@@ -31,9 +31,17 @@ function Whiteboard({ user, logout }) {
   return (
     <>
       <Toast ref={toast} />
-      <AvatarCursor avatar={avatar} />
+      {Object.entries(cursors).map(([id, cursor]) => (
+        <AvatarCursor
+          key={id}
+          x={cursor.x}
+          y={cursor.y}
+          avatar={avatar}
+          viewport={viewport}
+        />
+      ))}
       <BoardMenu username={user} logout={logout} />
-      <GraceCountdown endsAt={graceEndsAt}/>
+      <GraceCountdown endsAt={graceEndsAt} />
       <Chatroom />
       <Board />
     </>

@@ -21,6 +21,30 @@ export default function boardHandlers(io, socket) {
     socket.to(roomCode).emit("stroke-end", { stroke });
   });
 
+  socket.on("shape-add", async ({ roomCode, shape }) => {
+    await Room.updateOne(
+      { roomCode },
+      { $push: { boardData: shape } }
+    );
+
+    socket.to(roomCode).emit("shape-add", { shape });
+  });
+
+  socket.on("cursor-move", ({ roomCode, x, y, username }) => {
+    socket.to(roomCode).emit("cursor-move", {
+      userId: socket.userId,
+      username,
+      x,
+      y
+    });
+  });
+
+  socket.on("cursor-leave", ({ roomCode }) => {
+    socket.to(roomCode).emit("cursor-leave", {
+      userId: socket.userId
+    });
+  });
+
   socket.on("clear-board", async ({ roomCode }) => {
     await Room.updateOne(
       { roomCode },

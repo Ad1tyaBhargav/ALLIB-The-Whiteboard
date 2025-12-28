@@ -10,6 +10,12 @@ export function RoomProvider({ children, toastRef }) {
   const [chats, setChats] = useState([]);
   const [isLocked, setIsLocked] = useState(false);
   const [graceEndsAt, setGraceEndsAt] = useState(null);
+  const [cursors, setCursors] = useState({});
+  const [viewport, setViewport] = useState({
+    scale: 1,
+    x: 0,
+    y: 0,
+  });
 
   const showToast = (severity, summary, detail) => {
     toastRef?.current?.show({
@@ -48,40 +54,6 @@ export function RoomProvider({ children, toastRef }) {
     localStorage.removeItem("lastRoomCode");
   };
 
-  //   useEffect(() => {
-  //   const tryRejoin = () => {
-  //     const lastRoom = localStorage.getItem("lastRoomCode");
-  //     if (!lastRoom) return;
-
-  //     socket.emit("join-room", { roomCode: lastRoom }, (res) => {
-  //       if (!res?.success) {
-  //         console.warn("Auto rejoin failed:", res?.message);
-
-  //         localStorage.removeItem("lastRoomCode");
-  //         resetRoomState(); 
-  //         return;
-  //       }
-
-  //       console.log("Auto rejoined room:", lastRoom);
-  //     });
-  //   };
-
-  //   if (socket.connected) {
-  //     tryRejoin();
-  //   }
-
-  //   socket.on("connect", tryRejoin);
-
-  //   return () => {
-  //     socket.off("connect", tryRejoin);
-  //   };
-  // }, []);
-
-
-
-  //all sockets
-
-
   useEffect(() => {
     if (!socket) return;
 
@@ -114,10 +86,6 @@ export function RoomProvider({ children, toastRef }) {
     const handleBoardSync = (data) => {
       setBoardData(data);
     };
-
-    // const handleBoardDraw = (stroke) => {
-    //   setBoardData(prev => [...prev, stroke]);
-    // };
 
     const handleReceiveMessage = (msg) => {
       setChats(prev => [...prev, msg]);
@@ -156,32 +124,63 @@ export function RoomProvider({ children, toastRef }) {
       );
     };
 
+    const handleCursorMove = ({ userId, username, x, y }) => {
+      setCursors(prev => ({
+        ...prev,
+        [userId]: { x, y, username }
+      }));
+    };
+
+    const handleCursorLeave = ({ userId }) => {
+      setCursors(prev => {
+        const copy = { ...prev };
+        delete copy[userId];
+        return copy;
+      });
+    };
+
+    const handleShapeAdd = ({ shape }) => {
+      setBoardData(prev => [...prev, shape]);
+    };
+
     socket.on("player-list", handlePlayerList);
     socket.on("user-joined", handleUserJoined);
     socket.on("user-left", handleUserLeft);
     socket.on("room-closed", handleRoomClosed);
+
     socket.on("board-sync", handleBoardSync);
-    // socket.on("board-draw", handleBoardDraw);
     socket.on("stroke-start", handleStrokeStart);
     socket.on("stroke-update", handleStrokeUpdate);
     socket.on("stroke-end", handleStrokeEnd);
+    socket.on("shape-add", handleShapeAdd);
+
     socket.on("room-grace-start", handleGraceStart);
     socket.on("room-grace-cancel", handleGraceCancel);
+
     socket.on("receive-message", handleReceiveMessage);
+
+    socket.on("cursor-move", handleCursorMove);
+    socket.on("cursor-leave", handleCursorLeave);
 
     return () => {
       socket.off("player-list", handlePlayerList);
       socket.off("user-joined", handleUserJoined);
       socket.off("user-left", handleUserLeft);
       socket.off("room-closed", handleRoomClosed);
+
       socket.off("board-sync", handleBoardSync);
-      // socket.off("board-draw", handleBoardDraw);
       socket.off("stroke-start", handleStrokeStart);
       socket.off("stroke-update", handleStrokeUpdate);
       socket.off("stroke-end", handleStrokeEnd);
+      socket.off("shape-add", handleShapeAdd);
+
       socket.off("room-grace-start", handleGraceStart);
       socket.off("room-grace-cancel", handleGraceCancel);
+
       socket.off("receive-message", handleReceiveMessage);
+
+      socket.off("cursor-move", handleCursorMove);
+      socket.off("cursor-leave", handleCursorLeave);
     };
   }, []);
 
@@ -195,6 +194,10 @@ export function RoomProvider({ children, toastRef }) {
         setBoardData,
 
         chats,
+
+        cursors,
+        viewport,
+        setViewport,
 
         joinRoom,
         leaveRoom,

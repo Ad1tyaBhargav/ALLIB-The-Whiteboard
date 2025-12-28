@@ -11,7 +11,7 @@ export default function Board() {
   const [tool, setTool] = useState("pen");
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [selectedId, setSelectedId] = useState(null);
-  const { boardData, setBoardData, roomCode, isLocked } = useRoom()
+  const { boardData, setBoardData, roomCode, isLocked, setViewport } = useRoom()
 
   const stageRef = useRef(null);
   const trRef = useRef(null);
@@ -21,6 +21,8 @@ export default function Board() {
   const lastEmitTimeRef = useRef(0);
   const EMIT_INTERVAL = 25;
   const MIN_DISTANCE = 2;
+  const lastCursorEmitRef = useRef(0);
+  const CURSOR_EMIT_INTERVAL = 30;
   const isSpacePressed = useRef(false);
 
   const [stageScale, setStageScale] = useState(1);
@@ -89,61 +91,131 @@ export default function Board() {
 
   // ✅ Continue drawing
   const handleMouseMove = (e) => {
-    if (!isDrawing.current || isLocked || !currentStrokeRef.current) return;
-
     const stage = e.target.getStage();
+
+    // 🔵 CURSOR EMIT (always)
+    const nowCursor = Date.now();
+    if (nowCursor - lastCursorEmitRef.current > CURSOR_EMIT_INTERVAL) {
+      const boardPos = getRelativePointer(stage);
+      socket.emit("cursor-move", {
+        roomCode,
+        x: boardPos.x,
+        y: boardPos.y,
+      });
+      lastCursorEmitRef.current = nowCursor;
+    }
+
+    // ❌ if not drawing, stop here
+    if (!isDrawing.current || isLocked) return;
+
     const point = getRelativePointer(stage);
 
-    const prevStroke = currentStrokeRef.current;
-    const pts = prevStroke.points;
-    const lastX = pts[pts.length - 2];
-    const lastY = pts[pts.length - 1];
+    // =========================
+    // ✏️ FREEHAND (pen / eraser)
+    // =========================
+    if ((tool === "pen" || tool === "eraser") && currentStrokeRef.current) {
+      const prevStroke = currentStrokeRef.current;
+      const pts = prevStroke.points;
+      const lastX = pts[pts.length - 2];
+      const lastY = pts[pts.length - 1];
 
-    // ✅ distance-based decimation
-    const dx = point.x - lastX;
-    const dy = point.y - lastY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+      const dx = point.x - lastX;
+      const dy = point.y - lastY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance < MIN_DISTANCE) return;
+      if (distance < MIN_DISTANCE) return;
 
-    // ✅ CREATE NEW POINTS ARRAY (CRITICAL FIX)
-    const newPoints = [...prevStroke.points, point.x, point.y];
+      const newPoints = [...pts, point.x, point.y];
 
-    const updatedStroke = {
-      ...prevStroke,
-      points: newPoints,
-    };
-
-    currentStrokeRef.current = updatedStroke;
-
-    setBoardData(prev => {
-      const copy = [...prev];
-      copy[copy.length - 1] = updatedStroke;
-      return copy;
-    });
-
-    const now = Date.now();
-    if (now - lastEmitTimeRef.current > EMIT_INTERVAL) {
-      socket.emit("stroke-update", {
-        roomCode,
-        id: updatedStroke.id,
+      const updatedStroke = {
+        ...prevStroke,
         points: newPoints,
+      };
+
+      currentStrokeRef.current = updatedStroke;
+
+      setBoardData(prev => {
+        const copy = [...prev];
+        copy[copy.length - 1] = updatedStroke;
+        return copy;
       });
-      lastEmitTimeRef.current = now;
+
+      const now = Date.now();
+      if (now - lastEmitTimeRef.current > EMIT_INTERVAL) {
+        socket.emit("stroke-update", {
+          roomCode,
+          id: updatedStroke.id,
+          points: newPoints,
+        });
+        lastEmitTimeRef.current = now;
+      }
+
+      return; // IMPORTANT
     }
+
+    // =========================
+    // 📐 SHAPES (rect, circle…)
+    // =========================
+    setBoardData(prev => {
+      const last = prev[prev.length - 1];
+      if (!last) return prev;
+
+      let updated = last;
+
+      if (last.type === "rectangle") {
+        updated = {
+          ...last,
+          width: point.x - last.x,
+          height: point.y - last.y,
+        };
+      }
+
+      if (last.type === "circle") {
+        const radius = Math.sqrt(
+          (point.x - last.x) ** 2 + (point.y - last.y) ** 2
+        );
+        updated = { ...last, radius };
+      }
+
+      if (last.type === "arrow") {
+        updated = {
+          ...last,
+          points: [last.x, last.y, point.x, point.y],
+        };
+      }
+
+      return [...prev.slice(0, -1), updated];
+    });
   };
+
 
   const handleMouseUp = () => {
-    if (!isDrawing.current || !currentStrokeRef.current) return;
+    if (!isDrawing.current) return;
 
-    socket.emit("stroke-end", {
-      roomCode,
-      stroke: currentStrokeRef.current,
-    });
+    // 🟢 PEN / ERASER
+    if ((tool === "pen" || tool === "eraser") && currentStrokeRef.current) {
+      socket.emit("stroke-end", {
+        roomCode,
+        stroke: currentStrokeRef.current,
+      });
+      currentStrokeRef.current = null;
+    }
 
-    currentStrokeRef.current = null;
+    // 🔷 SHAPES (sync once)
+    if (tool !== "pen" && tool !== "eraser") {
+      const lastShape = boardData[boardData.length - 1];
+      if (lastShape) {
+        socket.emit("shape-add", {
+          roomCode,
+          shape: lastShape,
+        });
+      }
+    }
+
     isDrawing.current = false;
+    socket.emit("cursor-leave", { roomCode });
   };
+
 
   // ✅ Undo / Redo
   const undo = () => {
@@ -254,6 +326,21 @@ export default function Board() {
       window.removeEventListener("keyup", up);
     };
   }, []);
+
+  //for cursor
+  useEffect(() => {
+    return () => {
+      socket.emit("cursor-leave", { roomCode });
+    };
+  }, [roomCode]);
+
+  useEffect(() => {
+    setViewport({
+      scale: stageScale,
+      x: stagePosition.x,
+      y: stagePosition.y,
+    });
+  }, [stageScale, stagePosition]);
 
   return (
     <div style={{ width: "100vw", height: "100vh", background: "#fff", overflow: "hidden" }}>

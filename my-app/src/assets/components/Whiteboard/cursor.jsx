@@ -1,29 +1,19 @@
 import React, { useEffect, useState } from "react";
 
-export default function AvatarCursor({avatar}) {
-    const [pos, setPos] = useState({ x: 0, y: 0 });
-    
+export default function AvatarCursor({ avatar, x, y,viewport }) {
+    if (x == null || y == null) return null;
 
-    useEffect(() => {
-        const move = (e) => {
-            setPos({ x: e.clientX, y: e.clientY });
-        };
-        window.addEventListener("mousemove", move);
-        return () => window.removeEventListener("mousemove", move);
-    }, []);
+    const screenX = x * viewport.scale + viewport.x;
+    const screenY = y * viewport.scale + viewport.y;
 
     return (
         <>
-            {/* Hide system cursor */}
-            <style>{`body { cursor: none; }
-            body, html, * { cursor: none !important;}`}</style>
-
             {/* Custom avatar cursor */}
             <div
                 style={{
                     position: "fixed",
-                    top: pos.y,
-                    left: pos.x,
+                    top: screenY,
+                    left: screenX,
                     transform: "translate(-50%, -50%)",
                     pointerEvents: "none",
                     zIndex: 9999,
@@ -41,7 +31,7 @@ export default function AvatarCursor({avatar}) {
                     />
 
                     {/* Little arrow triangle (pointer) */}
-                    <div/>
+                    <div />
                 </div>
             </div>
         </>
