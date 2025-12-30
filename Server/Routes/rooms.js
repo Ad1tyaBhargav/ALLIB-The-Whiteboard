@@ -63,7 +63,7 @@ router.delete("/delete-room/:roomCode", authMiddleware, async (req, res) => {
 })
 
 router.get("/fetch-rooms", authMiddleware, async (req, res) => {
-    const UserRooms = await Room.find({ adminId: req.user.id }).select("roomCode boardData")
+    const UserRooms = await Room.find({ adminId: req.user.id }).select("roomCode previewImage")
     res.json({ UserRooms })
 })
 

@@ -3,7 +3,7 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { Button } from "primereact/button";
 import { useRoom } from "../../context/RoomContext";
-import PlayerCard from "./components/playerCard";
+import PlayerCard from "./components/PlayerCard";
 
 const url = import.meta.env.VITE_SERVER;
 

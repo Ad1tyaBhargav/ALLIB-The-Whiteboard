@@ -21,8 +21,10 @@ const RoomSchema = new mongoose.Schema({
     }],
   createdAt: { type: Date, default: Date.now },
   boardData: { type: Array, default: [] },
-  isLocked: { type: Boolean, default:false },
-  graceEndsAt: { type: Date, default: null}
+  isLocked: { type: Boolean, default: false },
+  graceEndsAt: { type: Date, default: null },
+  previewImage: {type: String,default: null},
+  updatedAt: {type: Date,default: Date.now,}
 });
 
 export default mongoose.model("Room", RoomSchema);

@@ -286,6 +286,30 @@ export default function Board() {
     }));
   };
 
+  const exportBoardPreview = () => {
+    const stage = stageRef.current;
+    if (!stage) return null;
+
+    const oldScale = stage.scaleX();
+    const oldPos = stage.position();
+
+    // 🔴 RESET TRANSFORM
+    stage.scale({ x: 1, y: 1 });
+    stage.position({ x: 0, y: 0 });
+    stage.batchDraw();
+
+    const dataURL = stage.toDataURL({
+      pixelRatio: 0.3,
+    });
+
+    // 🔵 RESTORE TRANSFORM
+    stage.scale({ x: oldScale, y: oldScale });
+    stage.position(oldPos);
+    stage.batchDraw();
+
+    return dataURL;
+  };
+
   //keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -331,6 +355,25 @@ export default function Board() {
   useEffect(() => {
     return () => {
       socket.emit("cursor-leave", { roomCode });
+    };
+  }, [roomCode]);
+
+  //preview generator
+  useEffect(() => {
+    const handlePreviewRequest = async () => {
+      const preview = exportBoardPreview();
+      if (!preview) return;
+
+      socket.emit("board-preview", {
+        roomCode,
+        image: preview,
+      });
+    };
+
+    socket.on("request-board-preview", handlePreviewRequest);
+
+    return () => {
+      socket.off("request-board-preview", handlePreviewRequest);
     };
   }, [roomCode]);
 

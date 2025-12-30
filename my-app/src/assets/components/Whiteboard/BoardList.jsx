@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import axios from "axios";
-import { socket } from "../../../socket";
+import BoardCard from "./components/BoardCard";
 import { InputText } from 'primereact/inputtext';
 import { useRoom } from "../../context/RoomContext";
 import { Toast } from 'primereact/toast';
@@ -117,24 +117,10 @@ export default function BoardList({ close, username }) {
                         <></>
                     ) : (
                         rooms.map((room) => (
-                            <div
-                                key={room.roomCode}
-                                className="board-card"
-
-                            >
-                                {/* Thumbnail / preview */}
-                                <img
-                                    src={room.thumbnail || "/placeholder.png"}
-                                    alt="Board Preview"
-                                    className="preview-img"
-                                />
-
-                                <p onClick={() => {
-                                    joinRoom(room.roomCode);
-                                    close()
-                                }}>{room.roomCode} </p>
-                                <Button className="RoomDeleteButton" icon="pi pi-trash" onClick={() => deleteRoom(room.roomCode)} />
-                            </div>
+                            <BoardCard
+                                room={room}
+                                deleteRoom={deleteRoom}
+                            />
                         ))
                     )}
                     <Card className="RoomButtons" onClick={newRoom} >

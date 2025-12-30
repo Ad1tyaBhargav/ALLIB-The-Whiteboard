@@ -39,8 +39,11 @@ export function RoomProvider({ children, toastRef }) {
   }
 
   function leaveRoom() {
-    socket.emit("leave-room");
-    resetRoomState();
+    socket.emit("leave-room", (response) => {
+      if (response?.ok) {
+        resetRoomState(); // ✅ safe now
+      }
+    });
   }
 
   const resetRoomState = () => {
@@ -95,6 +98,11 @@ export function RoomProvider({ children, toastRef }) {
     const handleGraceStart = ({ graceEndsAt }) => {
       setIsLocked(true);
       setGraceEndsAt(new Date(graceEndsAt));
+
+      if (socket.isAdmin) {
+        socket.emit("request-board-preview");
+      }
+
       showToast("warn", "Admin disconnected", "Room locked temporarily");
     }
 

@@ -3,7 +3,7 @@ import { Button } from "primereact/button"
 export default function PlayerCard({player}){
 
     return (
-        <div key={player.username} className="player-item" id={player.id}>
+        <div key={player.id} className="player-item" id={player.userId}>
             <span className="player-name">
                 {player.username}
             </span>

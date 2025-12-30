@@ -1,7 +1,7 @@
 import Room from "../models/Room.js";
 import { activeUsers, graceTimers } from "./state.js";
 
-export default function roomHandlers(io, socket, ) {
+export default function roomHandlers(io, socket,) {
 
     socket.on("join-room", async ({ roomCode }, callback) => {
         const safeCallback = typeof callback === "function"
@@ -44,7 +44,7 @@ export default function roomHandlers(io, socket, ) {
                 );
 
                 io.to(roomCode).emit("room-grace-cancel");
-            } 
+            }
             else {
                 // Non-admin trying to join
                 if (room.isLocked) {
@@ -142,60 +142,68 @@ export default function roomHandlers(io, socket, ) {
     });
 
 
-    socket.on("leave-room", async () => {
+    socket.on("leave-room", async (callback) => {
         const userId = socket.user.id;
         const username = socket.user.username;
         const roomCode = socket.currentRoom;
 
-        if (!roomCode) return;
-
-        const room = await Room.findOne({ roomCode });
-        if (!room) return;
-
-        const isAdmin = room.adminId === userId;
-
-        // 🔴 CASE 1: ADMIN LEAVES → KILL ROOM
-        if (isAdmin) {
-            // Notify everyone
-            io.to(roomCode).emit("room-closed", {
-                message: "Admin left the room"
-            });
-
-            // Remove all players from DB
-            await Room.updateOne(
-                { roomCode },
-                { $set: { players: [] } }
-            );
-
-            // Remove all sockets from room
-            const sockets = await io.in(roomCode).fetchSockets();
-            for (const s of sockets) {
-                activeUsers.delete(s.user.id);
-                s.leave(roomCode);
-                s.currentRoom = null;
-            }
-
-            console.log(`🔒 Room ${roomCode} closed (admin left)`);
+        if (!roomCode) {
+            callback?.({ ok: true });
             return;
         }
 
-        // 🟢 CASE 2: NORMAL PLAYER LEAVES
+        const room = await Room.findOne({ roomCode });
+        if (!room) {
+            callback?.({ ok: true });
+            return;
+        }
+
+        const isAdmin = room.adminId === userId;
+
+        if (isAdmin) {
+            // 🔴 ask admin to send preview
+            socket.emit("request-board-preview");
+
+            // wait for preview to arrive (short grace)
+            setTimeout(async () => {
+                io.to(roomCode).emit("room-closed", {
+                    message: "Admin left the room"
+                });
+
+                await Room.updateOne(
+                    { roomCode },
+                    { $set: { players: [] } }
+                );
+
+                const sockets = await io.in(roomCode).fetchSockets();
+                for (const s of sockets) {
+                    s.leave(roomCode);
+                    s.currentRoom = null;
+                }
+
+                console.log(`🔒 Room ${roomCode} closed`);
+
+                // ✅ NOW tell frontend it’s safe to reset
+                callback?.({ ok: true });
+            }, 700);
+
+            return;
+        }
+
+        // normal player
         await Room.updateOne(
             { roomCode },
             { $pull: { players: { userId } } }
         );
 
-        activeUsers.delete(userId);
         socket.leave(roomCode);
         socket.currentRoom = null;
 
-        io.to(roomCode).emit("user-left", {
-            userId,
-            username
-        });
+        io.to(roomCode).emit("user-left", { userId, username });
 
-        console.log(`${username} left room ${roomCode}`);
+        callback?.({ ok: true });
     });
+
 
 
 }

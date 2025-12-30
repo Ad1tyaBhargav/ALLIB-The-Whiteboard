@@ -7,7 +7,7 @@ import { Server } from "socket.io";
 import authRoutes from "./Routes/auth.js";
 import roomRoutes from "./Routes/rooms.js"
 import socketHandlers from "./Socket/main.js";
-import connectDB from "./database.js";
+import connectDB from "./utils/database.js";
 
 const app = express();
 const server = createServer(app);

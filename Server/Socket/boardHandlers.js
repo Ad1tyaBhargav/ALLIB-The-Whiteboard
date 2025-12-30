@@ -1,4 +1,5 @@
 import Room from "../models/Room.js";
+import cloudinary from "../utils/cloudinary.js"
 
 export default function boardHandlers(io, socket) {
   // stroke starts (DO NOT save to DB)
@@ -44,6 +45,49 @@ export default function boardHandlers(io, socket) {
       userId: socket.userId
     });
   });
+
+  socket.on("board-preview", async ({ roomCode, image }) => {
+    if (!roomCode || !image){
+      console.log(roomCode)
+      console.log(image)
+      return;
+    } 
+
+    try {
+      const room = await Room.findOne({ roomCode });
+      if (!room) {
+        console.warn("Preview skipped: room not found", roomCode);
+        return;
+      }
+
+      // 🔒 Prevent double preview overwrite
+      if (room.previewImage) {
+        console.log("Preview already exists, skipping save");
+        return;
+      }
+
+      const upload = await cloudinary.uploader.upload(image, {
+        folder: "board-previews",
+        resource_type: "image",
+      });
+
+      await Room.updateOne(
+        { roomCode },
+        {
+          $set: {
+            previewImage: upload.secure_url,
+            updatedAt: new Date(),
+          }
+        }
+      );
+
+      console.log("✅ Board preview saved to DB:", upload.secure_url);
+
+    } catch (err) {
+      console.error("❌ Board preview save failed:", err);
+    }
+  });
+
 
   socket.on("clear-board", async ({ roomCode }) => {
     await Room.updateOne(
