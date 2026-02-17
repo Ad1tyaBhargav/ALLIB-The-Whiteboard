@@ -6,6 +6,8 @@ import { Button } from 'primereact/button';
 import { Toast } from "primereact/toast";
 import axios from "axios";
 import { socket } from "../../../socket";
+import { Dialog } from 'primereact/dialog';
+
 
 const url = import.meta.env.VITE_SERVER;
 
@@ -17,8 +19,9 @@ export default function Login({ onLogin }) {
         password: ""
     });
     const [login, setLogin] = useState(false)
-    const [signup, setSignup] = useState(false)
+    const [signup, setSignup] = useState(true)
     const [conpass, setConpass] = useState("")
+    const [visible, setVisible] = useState(false);
 
     function handleInput(event) {
         const { name, value } = event.target;
@@ -90,46 +93,49 @@ export default function Login({ onLogin }) {
 
     return (
         <>
-            <div id="welcome-page">
-                <h1>Welcome to Allib-The Whiteboard</h1>
-                <div className="para">
+            <Toast ref={toast} />
+            <Button label="Login" icon="pi pi-user" onClick={() => setVisible(true)} className="btn btn-lg btn-light text-black" />
+            <Dialog
+                visible={visible}
+                modal
+                onHide={() => { if (!visible) return; setVisible(false); }}
+                content={({ hide }) => (
+                    <div className="flex p-4 align-items-center bg-dark rounded">
 
-                </div>
+                        <ul className="nav flex justify-content-center mb-3">
+                            <li className="nav-item">
+                                <a className={`nav-link text-white fw-bold ${login ? "border-bottom border-white" : ""}`} href="#" onClick={() => { setLogin(true); setSignup(false) }}>
+                                    Login
+                                </a>
+                            </li>
+                            <li className="nav-item">
+                                <a className={`nav-link text-white fw-bold ${signup ? "border-bottom border-white" : ""}`} href="#" onClick={() => { setSignup(true); setLogin(false) }}>
+                                    Sign-Up
+                                </a>
+                            </li>
+                        </ul>
 
-                <div className="inputs">
-                    <Toast ref={toast} />
-                    {(login || signup) &&
-                        <>
-                            <InputText id="username" placeholder="Username" value={user.username} name="username" onChange={handleInput} keyfilter="alphanum" className="inputsArea" />
-                            <Password inputId="password" placeholder="Password" value={user.password} name="password" onChange={handleInput} className="inputsArea" />
-                        </>
-                    }
-                    {signup &&
-                        <Password inputId="confirmPassword" placeholder="Confirm Password" value={conpass} name="confirmPassword" onChange={(e) => setConpass(e.target.value)} className="inputsArea" />
-                    }
-                </div>
-                <div className="welcome-buttons">
-                    {(!login && !signup) &&
-                        <>
-                            <Button className="authBut" label="Login" onClick={() => setLogin(true)} rounded />
-                            <Button className="authBut" label="Signup" onClick={() => setSignup(true)} rounded />
-                        </>
-                    }
-                    {(login || signup) &&
-                        <>
-                            <Button label="Confirm" onClick={handleConfirm} rounded className="authBut" />
-                            <Button className="authBut" rounded label="Back" onClick={() => {
-                                setLogin(false)
-                                setSignup(false)
-                                setUser({
-                                    username: "",
-                                    password: ""
-                                })
-                            }} />
-                        </>
-                    }
-                </div>
-            </div>
+                        <div className="input-group mb-3">
+                            <InputText id="username" placeholder="Username" value={user.username} name="username" onChange={handleInput} keyfilter="alphanum" className="form-control" />
+                        </div>
+
+                        <div className="input-group mb-3">
+                            <Password inputId="password" placeholder="Password" value={user.password} name="password" onChange={handleInput} feedback={false} toggleMask />
+                        </div>
+
+                        {signup && (
+                            <div className="input-group mb-3">
+                                <Password inputId="conpass" placeholder="Confirm Password" value={conpass} name="conpass" onChange={(e)=>setConpass(e.target.value)} feedback={false} toggleMask />
+                            </div>
+                        )}
+
+                        <div className="d-flex justify-content-center gap-4 mt-4">
+                            <Button label={login ? "Login" : "Sign-Up"} onClick={handleConfirm} text className="btn btn-primary"></Button>
+                            <Button label="Cancel" onClick={(e) => hide(e)} text className="btn btn-primary"></Button>
+                        </div>
+                    </div>
+                )}
+            ></Dialog>
         </>
     );
 } 

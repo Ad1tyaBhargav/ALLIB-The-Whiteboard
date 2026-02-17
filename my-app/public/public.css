@@ -417,12 +417,6 @@ body {
   gap: 15px;
 }
 
-.homepageImg {
-  position: absolute;
-  top: -30px;
-  left: -60px;
-}
-
 .roomCodeSty {
   display: flex;
   justify-content: center;
