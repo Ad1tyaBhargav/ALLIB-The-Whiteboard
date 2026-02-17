@@ -4,14 +4,15 @@ import { socket } from "../../../socket";
 import { useRoom } from "../../context/RoomContext";
 import Toolbar from "./toolbar";
 
-export default function Board() {
+export default function Board({username}) {
 
   const [undone, setUndone] = useState([]);
   const [color, setColor] = useState("#000000");
   const [tool, setTool] = useState("pen");
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [selectedId, setSelectedId] = useState(null);
-  const { boardData, setBoardData, roomCode, isLocked, setViewport } = useRoom()
+  const [fillEnabled, setFillEnabled] = useState(false);
+  const { boardData, setBoardData, roomCode, isLocked, setViewport, admin } = useRoom()
 
   const stageRef = useRef(null);
   const trRef = useRef(null);
@@ -24,6 +25,7 @@ export default function Board() {
   const lastCursorEmitRef = useRef(0);
   const CURSOR_EMIT_INTERVAL = 30;
   const isSpacePressed = useRef(false);
+  const isAdmin = username === admin;
 
   const [stageScale, setStageScale] = useState(1);
   const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
@@ -84,6 +86,7 @@ export default function Board() {
           points: [pos.x, pos.y],
           color,
           strokeWidth,
+          fillEnabled,
         },
       ]);
     }
@@ -188,7 +191,6 @@ export default function Board() {
     });
   };
 
-
   const handleMouseUp = () => {
     if (!isDrawing.current) return;
 
@@ -216,7 +218,6 @@ export default function Board() {
     socket.emit("cursor-leave", { roomCode });
   };
 
-
   // ✅ Undo / Redo
   const undo = () => {
     if (!boardData.length) return;
@@ -237,6 +238,8 @@ export default function Board() {
 
   // ✅ Clear Canvas
   const clearCanvas = () => {
+    if (user !== admin) return;
+
     setBoardData([]);
     setSelectedId(null);
 
@@ -298,9 +301,25 @@ export default function Board() {
     stage.position({ x: 0, y: 0 });
     stage.batchDraw();
 
+    // 🟢 draw temporary black background
+    const background = new window.Konva.Rect({
+      x: 0,
+      y: 0,
+      width: stage.width(),
+      height: stage.height(),
+      fill: "#ffffff",
+    });
+
+    stage.getLayers()[0].add(background);
+    background.moveToBottom();
+    stage.batchDraw();
+
     const dataURL = stage.toDataURL({
       pixelRatio: 0.3,
     });
+
+    background.destroy();
+    stage.batchDraw();
 
     // 🔵 RESTORE TRANSFORM
     stage.scale({ x: oldScale, y: oldScale });
@@ -389,13 +408,18 @@ export default function Board() {
     <div style={{ width: "100vw", height: "100vh", background: "#fff", overflow: "hidden" }}>
 
       <Toolbar
-        onPenChange={({ color, size }) => {
-          if (color) setColor(color);
-          if (size) setStrokeWidth(size);
+        onPenChange={({ color, size, fillEnabled }) => {
+          if (color !== undefined) setColor(color);
+          if (size !== undefined) setStrokeWidth(size);
+          if (fillEnabled !== undefined) setFillEnabled(fillEnabled);
         }}
+
         onToolChange={setTool}
         clearCanvas={clearCanvas}
+        isAdmin={isAdmin}
+        stageRef={stageRef}
       />
+
 
 
       <Stage
@@ -429,6 +453,7 @@ export default function Board() {
                     height={el.height}
                     stroke={el.color}
                     strokeWidth={el.strokeWidth}
+                    fill={el.fillEnabled ? el.color : undefined}
                     draggable={tool === "select"}
                     onClick={() => setSelectedId(el.id)}
                     onTap={() => setSelectedId(el.id)}
@@ -444,6 +469,7 @@ export default function Board() {
                     radius={el.radius || 0}
                     stroke={el.color}
                     strokeWidth={el.strokeWidth}
+                    fill={el.fillEnabled ? el.color : undefined}
                     draggable={tool === "select"}
                     onClick={() => setSelectedId(el.id)}
                     onTap={() => setSelectedId(el.id)}

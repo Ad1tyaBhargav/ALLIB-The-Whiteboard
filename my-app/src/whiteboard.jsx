@@ -43,7 +43,7 @@ function Whiteboard({ user, logout }) {
       <BoardMenu username={user} logout={logout} />
       <GraceCountdown endsAt={graceEndsAt} />
       <Chatroom />
-      <Board />
+      <Board username={user} />
     </>
   );
 }

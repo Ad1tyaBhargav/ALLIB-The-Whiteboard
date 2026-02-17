@@ -49,7 +49,7 @@ export default function BoardMenu({username,logout}) {
 
     return (
         <>
-            <SpeedDial model={items} radius={120} type="quarter-circle" direction="down-right" style={{ top:20,left:20 }}  className="custom-speeddial" />
+            <SpeedDial model={items} radius={120} type="quarter-circle" direction="down-right" style={{ top:20,left:20 }}  buttonClassName="bg-dark rounded-circle" />
             {showList && <BoardList close={closeList} username={username}/>}
             {showRoom && <RoomUsers close={closeList} />}
         </>

@@ -117,7 +117,7 @@ export default function roomHandlers(io, socket,) {
 
             const updatedRoom = await Room.findOne({ roomCode }).select("players boardData");
 
-            socket.emit("player-list", updatedRoom.players);
+            socket.emit("player-list", { players: updatedRoom.players ,admin: updatedRoom.players.find(p => p.isAdmin)});
 
             console.log(updatedRoom.players)
 

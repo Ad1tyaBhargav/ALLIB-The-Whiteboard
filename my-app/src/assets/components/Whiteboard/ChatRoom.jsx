@@ -52,7 +52,7 @@ export default function Chatroom() {
                 model={items}
                 radius={120}
                 direction="up"
-                className="custom-speeddial"
+                buttonClassName="bg-dark rounded-circle"
                 showIcon="pi pi-comments"
                 style={{ right: "2rem", bottom: "2rem", position: "absolute", zIndex: "9998" }}
                 onClick={() => setShowChat(true)}
@@ -63,7 +63,7 @@ export default function Chatroom() {
                 <div id="chatroom" >
                     <div id="chatroom-header" >
                         Chat Room
-                        <Button icon="pi pi-times" onClick={() => setShowChat(false)} />
+                        <Button icon="pi pi-times" className="rounded" onClick={() => setShowChat(false)} />
                     </div>
 
                     <div id="chatroom-body">

@@ -1,7 +1,7 @@
 import React from 'react'
 import Login from './Login'
 
-export default function Welcomepage({onLogin}) {
+export default function Welcomepage({ onLogin }) {
     return (
         <>
             <div className="position-relative min-vh-100 text-white container-fluid">
@@ -21,16 +21,40 @@ export default function Welcomepage({onLogin}) {
                 >
 
                     <header>
-                        <div className="d-flex justify-content-between align-items-center">
-                            <h3 className="mb-0">Whiteboard</h3>
+                        <nav className="navbar navbar-expand-md navbar-dark">
+                            <div className="container-fluid">
 
-                            <nav className="nav">
-                                <a className="nav-link text-white fw-bold" href="#">Home</a>
-                                <a className="nav-link text-white fw-bold" href="#">Features</a>
-                                <a className="nav-link text-white fw-bold" href="#">Contact</a>
-                            </nav>
-                        </div>
+                                <a className="navbar-brand fw-bold" href="#">
+                                    Whiteboard
+                                </a>
+
+                                <button
+                                    className="navbar-toggler"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#navbarContent"
+                                >
+                                    <span className="navbar-toggler-icon"></span>
+                                </button>
+
+                                <div className="collapse navbar-collapse" id="navbarContent">
+                                    <ul className="navbar-nav ms-auto mb-2 mb-md-0">
+                                        <li className="nav-item">
+                                            <a className="nav-link fw-bold" href="#">Home</a>
+                                        </li>
+                                        <li className="nav-item">
+                                            <a className="nav-link fw-bold" href="#">Features</a>
+                                        </li>
+                                        <li className="nav-item">
+                                            <a className="nav-link fw-bold" href="#">Contact</a>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                            </div>
+                        </nav>
                     </header>
+
 
                     <main className="text-center">
                         <h1>Collaborate in Real-Time</h1>

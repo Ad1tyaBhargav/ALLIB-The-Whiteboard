@@ -11,6 +11,7 @@ export function RoomProvider({ children, toastRef }) {
   const [isLocked, setIsLocked] = useState(false);
   const [graceEndsAt, setGraceEndsAt] = useState(null);
   const [cursors, setCursors] = useState({});
+  const [admin, setAdmin] = useState(null);
   const [viewport, setViewport] = useState({
     scale: 1,
     x: 0,
@@ -36,6 +37,8 @@ export function RoomProvider({ children, toastRef }) {
       localStorage.setItem("lastRoomCode", roomCode);
       setRoomCode(roomCode);
     });
+
+
   }
 
   function leaveRoom() {
@@ -60,8 +63,9 @@ export function RoomProvider({ children, toastRef }) {
   useEffect(() => {
     if (!socket) return;
 
-    const handlePlayerList = (players) => {
+    const handlePlayerList = ({players,admin}) => {
       setPlayers(players);
+      setAdmin(admin.username);
     };
 
     const handleUserJoined = (player) => {
@@ -197,6 +201,7 @@ export function RoomProvider({ children, toastRef }) {
       value={{
         roomCode,
         players,
+        admin,
 
         boardData,
         setBoardData,

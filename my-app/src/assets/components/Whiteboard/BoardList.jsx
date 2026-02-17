@@ -19,7 +19,7 @@ export default function BoardList({ close, username }) {
     const [Input, setInput] = useState("")
     const [showInput, setShowInput] = useState(false)
     const [loading, setLoading] = useState(true);
-    const { joinRoom} = useRoom()
+    const { joinRoom } = useRoom()
     const token = localStorage.getItem("token");
 
     useEffect(() => {
@@ -105,9 +105,9 @@ export default function BoardList({ close, username }) {
         <>
             <Toast ref={toast} />
             <div className="BoardList">
-                <div className="BoardListCloseButton">
+                <div className="BoardListCloseButton ">
                     <h2>Board Menu</h2>
-                    <Button icon="pi pi-times" onClick={close} />
+                    <Button icon="pi pi-times" className="rounded" onClick={close} />
                 </div>
 
                 {loading && <p>Loading boards...</p>}
@@ -118,6 +118,7 @@ export default function BoardList({ close, username }) {
                     ) : (
                         rooms.map((room) => (
                             <BoardCard
+                                key={room._id}
                                 room={room}
                                 deleteRoom={deleteRoom}
                             />
@@ -126,7 +127,7 @@ export default function BoardList({ close, username }) {
                     <Card className="RoomButtons" onClick={newRoom} >
                         New Room
                     </Card>
-                    <Card className="RoomButtons" onClick={() => setShowInput(true)}>
+                    <Card className="RoomButtons  " onClick={() => setShowInput(true)}>
                         {showInput ? <InputText value={Input} onChange={handleInput} name="roomcode" className="codeInput" keyfilter="alphanum" placeholder="Room Code" /> : <> Join Room</>}
                     </Card>
 

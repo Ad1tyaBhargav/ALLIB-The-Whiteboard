@@ -3,12 +3,14 @@ import { Button } from "primereact/button";
 import { ColorPicker } from "primereact/colorpicker";
 import { Slider } from "primereact/slider";
 
-import "primereact/resources/themes/lara-light-blue/theme.css";
-import "primereact/resources/primereact.min.css";
-import "primeicons/primeicons.css";
-
-export default function Toolbar({ onPenChange, onToolChange, clearCanvas }) {
-  const [position, setPosition] = useState({ x: 517, y: 543 });
+export default function Toolbar({
+  onPenChange,
+  onToolChange,
+  clearCanvas,
+  isAdmin,
+  stageRef,
+}) {
+  const [position, setPosition] = useState({ x: 500, y: 500 });
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
@@ -18,19 +20,20 @@ export default function Toolbar({ onPenChange, onToolChange, clearCanvas }) {
 
   const [color, setColor] = useState("#000000");
   const [size, setSize] = useState(4);
+  const [fillEnabled, setFillEnabled] = useState(false);
 
-  // 🖱️ Dragging logic
+  /* ================= Drag ================= */
+
   const handleMouseDown = (e) => {
     const isButton = e.target.closest(".p-button");
     const isMenu = e.target.closest(".popup-menu");
-    if (isButton || isMenu) return; // prevent drag if clicked a button or menu
+    if (isButton || isMenu) return;
 
     setDragging(true);
-    const toolbarEl = e.currentTarget;
-    toolbarEl.classList.add("dragging");
+    const rect = e.currentTarget.getBoundingClientRect();
     setOffset({
-      x: e.clientX - toolbarEl.getBoundingClientRect().left,
-      y: e.clientY - toolbarEl.getBoundingClientRect().top,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
     });
   };
 
@@ -42,10 +45,7 @@ export default function Toolbar({ onPenChange, onToolChange, clearCanvas }) {
     });
   };
 
-  const handleMouseUp = () => {
-    setDragging(false);
-    document.querySelector("#toolbar")?.classList.remove("dragging");
-  };
+  const handleMouseUp = () => setDragging(false);
 
   useEffect(() => {
     window.addEventListener("mousemove", handleMouseMove);
@@ -56,32 +56,48 @@ export default function Toolbar({ onPenChange, onToolChange, clearCanvas }) {
     };
   });
 
-  // 🔁 Sync pen settings
-  useEffect(() => {
-    onPenChange?.({ color, size });
-  }, [color, size]);
+  /* ================= Sync ================= */
 
-  // 🧭 Helper for tool activation
+  useEffect(() => {
+    onPenChange?.({ color, size, fillEnabled });
+  }, [color, size, fillEnabled]);
+
   const activateTool = (tool) => {
     setActiveTool(tool);
     onToolChange(tool);
   };
 
+  /* ================= Export ================= */
+
+  const exportBoard = () => {
+    if (!stageRef?.current) return;
+
+    const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
+
+    const link = document.createElement("a");
+    link.download = "whiteboard.png";
+    link.href = uri;
+    link.click();
+  };
+
+  /* ================= Render ================= */
+
   return (
     <div
       id="toolbar"
+      className="position-absolute bg-dark rounded-lg shadow d-flex gap-2 align-items-center"
       style={{
         top: position.y,
         left: position.x,
+        zIndex: 9999,
+        cursor: dragging ? "grabbing" : "grab",
       }}
       onMouseDown={handleMouseDown}
     >
-      {/* ✏️ Pen Tool */}
+      {/* Pen */}
       <Button
         icon="pi pi-pencil"
-        className={activeTool === "pen" ? "active-tool" : ""}
-        rounded
-        outlined
+        className={`${activeTool === "pen" ? "active-tool" : ""} rounded-circle`}
         onClick={() => {
           setPenOpen((prev) => !prev);
           setShapeOpen(false);
@@ -89,52 +105,60 @@ export default function Toolbar({ onPenChange, onToolChange, clearCanvas }) {
         }}
       />
 
-      {/* 🧱 Shape Tool */}
+      {/* Shape */}
       <Button
         icon="pi pi-stop"
-        className={activeTool.includes("shape") ? "active-tool" : ""}
-        rounded
-        outlined
+        className={`${activeTool !== "pen" && activeTool !== "eraser" ? "active-tool" : ""} rounded-circle`}
         onClick={() => {
           setShapeOpen((prev) => !prev);
           setPenOpen(false);
         }}
       />
 
-      {/* 🔲 Select / Resize Tool */}
-      <Button
-        icon="pi pi-arrow-up-left"
-        className={activeTool === "select" ? "active-tool" : ""}
-        rounded
-        outlined
-        onClick={() => activateTool("select")}
-      />
-
-      {/* 🧽 Eraser */}
+      {/* Eraser */}
       <Button
         icon="pi pi-eraser"
-        className={activeTool === "eraser" ? "active-tool" : ""}
-        rounded
-        outlined
+        className={`${activeTool === "eraser" ? "active-tool" : ""} rounded-circle`}
         onClick={() => activateTool("eraser")}
       />
 
-      {/* 🧹 Clear Canvas */}
+      {/* Fill Toggle */}
       <Button
-        icon="pi pi-trash"
-        rounded
-        outlined
-        severity="danger"
-        onClick={clearCanvas}
+        icon="pi pi-palette"
+        severity={fillEnabled ? "success" : "secondary"}
+        className={`${fillEnabled && "active-tool"} rounded-circle`}
+        onClick={() => setFillEnabled((prev) => !prev)}
+        tooltip="Toggle Fill"
       />
 
-      {/* 🎨 Pen Settings Popup */}
+      {/* Export */}
+      <Button
+        icon="pi pi-download"
+        severity="info"
+        className="rounded-circle"
+        onClick={exportBoard}
+        tooltip="Export Image"
+      />
+
+      {/* Clear (Admin Only) */}
+      <Button
+        icon="pi pi-trash"
+        severity="danger"
+        className="rounded-circle"
+        disabled={!isAdmin}
+        onClick={() => {
+          if (isAdmin) clearCanvas();
+        }}
+        tooltip="Clear Canvas (Admin Only)"
+      />
+
+      {/* Pen Popup */}
       {penOpen && (
-        <div className="popup-menu pen-settings">
+        <div className="popup-menu p-3 d-flex flex-column gap-2">
           <div className="pen-setting-group">
             <label>Color</label>
             <ColorPicker
-              value={color}
+              value={color.replace("#", "")}
               onChange={(e) => setColor("#" + e.value)}
             />
           </div>
@@ -152,41 +176,19 @@ export default function Toolbar({ onPenChange, onToolChange, clearCanvas }) {
         </div>
       )}
 
-      {/* 🧱 Shape Selection Popup */}
+      {/* Shape Popup */}
       {shapeOpen && (
-        <div className="popup-menu shape-menu">
-          <div
-            className={`shape-option ${
-              activeTool === "line" ? "shape-active" : ""
-            }`}
-            onClick={() => activateTool("line")}
-          >
-            ➖ Line
-          </div>
-          <div
-            className={`shape-option ${
-              activeTool === "rectangle" ? "shape-active" : ""
-            }`}
-            onClick={() => activateTool("rectangle")}
-          >
-            ⬛ Rectangle
-          </div>
-          <div
-            className={`shape-option ${
-              activeTool === "circle" ? "shape-active" : ""
-            }`}
-            onClick={() => activateTool("circle")}
-          >
-            ⚪ Circle
-          </div>
-          <div
-            className={`shape-option ${
-              activeTool === "arrow" ? "shape-active" : ""
-            }`}
-            onClick={() => activateTool("arrow")}
-          >
-            ➤ Arrow
-          </div>
+        <div className="popup-menu d-flex gap-2">
+          {[{ name: "line", icon: "---" }, { name: "rectangle", icon: "🔲" }, { name: "circle", icon: "⚪" }, { name: "arrow", icon: "➡️" }].map((shape) => (
+            <div
+              key={shape.name}
+              className={`btn btn-light   ${activeTool === (shape.name) ? "shape-active" : ""
+                }`}
+              onClick={() => activateTool(shape.name)}
+            >
+              {shape.icon}
+            </div>
+          ))}
         </div>
       )}
     </div>

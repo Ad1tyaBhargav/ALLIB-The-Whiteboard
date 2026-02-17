@@ -60,12 +60,6 @@ export default function boardHandlers(io, socket) {
         return;
       }
 
-      // 🔒 Prevent double preview overwrite
-      if (room.previewImage) {
-        console.log("Preview already exists, skipping save");
-        return;
-      }
-
       const upload = await cloudinary.uploader.upload(image, {
         folder: "board-previews",
         resource_type: "image",

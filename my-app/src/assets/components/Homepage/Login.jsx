@@ -32,28 +32,62 @@ export default function Login({ onLogin }) {
     }
 
     async function handleConfirm() {
+        if(window.innerWidth < 768) {   
+            toast.current.show({
+                severity: "warn",
+                summary: "Screen Too Small",
+                detail: "For better experience, please use a device with a larger screen.",
+            });
+            return; 
+        }
+
         const username = user.username
         const password = user.password
 
         if (login) {
+            try {
+                const res = await axios.post(
+                    `${url}/auth/login`,
+                    {
+                        username,
+                        password,
+                    },
+                    {
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        withCredentials: true,
+                    }
+                );
 
-            const res = await axios.post(
-                `${url}/auth/login`, {
-                username,
-                password
-            }, {
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                withCredentials: true
+                socket.auth = { token: res.data.token };
+                socket.connect();
+
+                localStorage.setItem("token", res.data.token);
+
+                onLogin(res.data.username);
+
+                toast.current.show({
+                    severity: "success",
+                    summary: "Success",
+                    detail: "Successfully Logged In",
+                });
+
+            } catch (error) {
+                console.error("Login error:", error);
+
+                const message =
+                    error.response?.data?.message ||
+                    "Login failed. Please try again.";
+
+                toast.current.show({
+                    severity: "error",
+                    summary: "Login Failed",
+                    detail: message,
+                });
             }
-            );
-            socket.auth = { token: res.data.token };
-            socket.connect();
-            localStorage.setItem("token", res.data.token)
-            onLogin(res.data.username)
-            return toast.current.show({ severity: 'success', summary: 'Success', detail: "Successfully Logged In" });
         }
+
         if (signup) {
             if (username === "") {
                 return toast.current.show({ severity: 'error', summary: 'Data Invalid', detail: 'Please enter username' });
@@ -125,7 +159,7 @@ export default function Login({ onLogin }) {
 
                         {signup && (
                             <div className="input-group mb-3">
-                                <Password inputId="conpass" placeholder="Confirm Password" value={conpass} name="conpass" onChange={(e)=>setConpass(e.target.value)} feedback={false} toggleMask />
+                                <Password inputId="conpass" placeholder="Confirm Password" value={conpass} name="conpass" onChange={(e) => setConpass(e.target.value)} feedback={false} toggleMask />
                             </div>
                         )}
 

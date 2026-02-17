@@ -17,7 +17,7 @@ export default function RoomUsers({ close }) {
 
                 <div className="BoardListCloseButton">
                     <h2>Room Menu</h2>
-                    <Button icon="pi pi-times" onClick={close} />
+                    <Button icon="pi pi-times" className="rounded" onClick={close} />
                 </div>
                 <div className="roomCodeSty">
                     {roomCode ? <h1>CODE-{roomCode}</h1> : <h1>Your room code will appear here</h1>}
@@ -25,6 +25,7 @@ export default function RoomUsers({ close }) {
                 <div className="player-list">
                     {players.map((player) => (
                         <PlayerCard
+                        key={player._id}
                             player={player}
                         />
                        ))}

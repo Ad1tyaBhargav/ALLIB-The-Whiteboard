@@ -6,7 +6,7 @@ export default function BoardCard({ room, deleteRoom }) {
     const { joinRoom } = useRoom()
 
     return (
-        <div className="board-card" key={room._id}>
+        <div className="board-card" >
 
             <div
                 className="preview-wrapper"
@@ -29,14 +29,15 @@ export default function BoardCard({ room, deleteRoom }) {
                 </div>
             </div>
 
-            <Button
-                className="RoomDeleteButton"
-                icon="pi pi-trash"
+            <button
+                className="btn btn-outline-danger outline RoomDeleteButton "
                 onClick={(e) => {
                     e.stopPropagation(); // ❗ prevent join
                     deleteRoom(room.roomCode);
                 }}
-            />
+            >
+                🗑️
+            </button>
         </div>
     )
 }
