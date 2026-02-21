@@ -25,7 +25,7 @@ export default function Welcomepage({ onLogin }) {
                             <div className="container-fluid">
 
                                 <a className="navbar-brand fw-bold" href="#">
-                                    Whiteboard
+                                   Allib
                                 </a>
 
                                 <button
@@ -57,7 +57,7 @@ export default function Welcomepage({ onLogin }) {
 
 
                     <main className="text-center">
-                        <h1>Collaborate in Real-Time</h1>
+                        <h1>Collaborate with Allib</h1>
                         <p className="lead">
                             Draw, chat and collaborate live with up to 4 users inside secure admin-controlled rooms.
                         </p>
@@ -65,7 +65,7 @@ export default function Welcomepage({ onLogin }) {
                     </main>
 
                     <footer className="text-center small">
-                        Built with MERN + Socket.io
+                        Built with love and care
                     </footer>
 
                 </div>

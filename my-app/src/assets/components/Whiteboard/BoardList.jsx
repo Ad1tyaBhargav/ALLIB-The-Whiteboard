@@ -12,7 +12,7 @@ import { Toast } from 'primereact/toast';
 
 const url = import.meta.env.VITE_SERVER;
 
-export default function BoardList({ close, username }) {
+export default function BoardList({ close }) {
 
     const toast = useRef(null)
     const [rooms, setRooms] = useState([])

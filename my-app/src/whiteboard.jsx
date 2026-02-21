@@ -40,10 +40,10 @@ function Whiteboard({ user, logout }) {
           viewport={viewport}
         />
       ))}
-      <BoardMenu username={user} logout={logout} />
+      <BoardMenu logout={logout} userId={user} />
       <GraceCountdown endsAt={graceEndsAt} />
       <Chatroom />
-      <Board username={user} />
+      <Board user={user} />
     </>
   );
 }

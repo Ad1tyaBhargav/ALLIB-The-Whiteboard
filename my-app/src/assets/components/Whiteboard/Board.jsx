@@ -4,7 +4,7 @@ import { socket } from "../../../socket";
 import { useRoom } from "../../context/RoomContext";
 import Toolbar from "./toolbar";
 
-export default function Board({username}) {
+export default function Board({user}) {
 
   const [undone, setUndone] = useState([]);
   const [color, setColor] = useState("#000000");
@@ -25,7 +25,7 @@ export default function Board({username}) {
   const lastCursorEmitRef = useRef(0);
   const CURSOR_EMIT_INTERVAL = 30;
   const isSpacePressed = useRef(false);
-  const isAdmin = username === admin;
+  const isAdmin = user === admin;
 
   const [stageScale, setStageScale] = useState(1);
   const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
@@ -296,17 +296,19 @@ export default function Board({username}) {
     const oldScale = stage.scaleX();
     const oldPos = stage.position();
 
+    const PREVIEW_WIDTH = 1200;
+    const PREVIEW_HEIGHT = 675;
+
     // 🔴 RESET TRANSFORM
     stage.scale({ x: 1, y: 1 });
     stage.position({ x: 0, y: 0 });
     stage.batchDraw();
 
-    // 🟢 draw temporary black background
     const background = new window.Konva.Rect({
       x: 0,
       y: 0,
-      width: stage.width(),
-      height: stage.height(),
+      width: PREVIEW_WIDTH,
+      height: PREVIEW_HEIGHT,
       fill: "#ffffff",
     });
 
@@ -315,6 +317,10 @@ export default function Board({username}) {
     stage.batchDraw();
 
     const dataURL = stage.toDataURL({
+      x:0,
+      y:0,
+      width: PREVIEW_WIDTH,
+      height: PREVIEW_HEIGHT,
       pixelRatio: 0.3,
     });
 

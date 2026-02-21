@@ -19,6 +19,14 @@ export default function roomHandlers(io, socket,) {
                 return;
             }
 
+            if (room.bannedUsers.includes(socket.user.id)) {
+                safeCallback({
+                    success: false,
+                    message: "You are banned from this room."
+                });
+                return;
+            }
+
             if (room.players.length >= 4) {
                 safeCallback({
                     success: false,
@@ -45,6 +53,7 @@ export default function roomHandlers(io, socket,) {
 
                 io.to(roomCode).emit("room-grace-cancel");
             }
+
             else {
                 // Non-admin trying to join
                 if (room.isLocked) {
@@ -117,13 +126,14 @@ export default function roomHandlers(io, socket,) {
 
             const updatedRoom = await Room.findOne({ roomCode }).select("players boardData");
 
-            socket.emit("player-list", { players: updatedRoom.players ,admin: updatedRoom.players.find(p => p.isAdmin)});
+            socket.emit("player-list", { players: updatedRoom.players, admin: updatedRoom.players.find(p => p.isAdmin) });
 
             console.log(updatedRoom.players)
 
             socket.emit("board-sync", updatedRoom.boardData);
 
             socket.to(roomCode).emit("user-joined", {
+                userId,
                 username,
                 isAdmin
             });
@@ -140,7 +150,6 @@ export default function roomHandlers(io, socket,) {
             });
         }
     });
-
 
     socket.on("leave-room", async (callback) => {
         const userId = socket.user.id;
@@ -199,11 +208,73 @@ export default function roomHandlers(io, socket,) {
         socket.leave(roomCode);
         socket.currentRoom = null;
 
-        io.to(roomCode).emit("user-left", { userId, username });
+        io.to(roomCode).emit("user-left", { mode: "left", userId, username });
 
         callback?.({ ok: true });
     });
 
+    socket.on("kick-user", async ({ roomCode, targetUserId }) => {
+        const room = await Room.findOne({ roomCode });
+        if (!room) return;
 
+        console.log(`Attempting to kick user ${targetUserId} from room ${roomCode}`);
+
+        // 🔒 Only admin can kick
+        if (room.adminId !== socket.user.id) return;
+
+        // Remove from DB players list
+        await Room.updateOne(
+            { roomCode },
+            { $pull: { players: { userId: targetUserId } } }
+        );
+
+        // Find target socket
+        const sockets = await io.in(roomCode).fetchSockets();
+        const targetSocket = sockets.find(
+            s => s.user.id === targetUserId
+        );
+
+        if (targetSocket) {
+            targetSocket.emit("kicked", {
+                message: "You were kicked by the admin."
+            });
+
+            targetSocket.leave(roomCode);
+            targetSocket.currentRoom = null;
+        }
+
+        io.to(roomCode).emit("user-left", { mode: "kicked", userId: targetUserId, username: targetSocket ? targetSocket.user.username : "A user" });
+    });
+
+    socket.on("ban-user", async ({ roomCode, targetUserId }) => {
+        const room = await Room.findOne({ roomCode });
+        if (!room) return;
+
+        if (room.adminId !== socket.user.id) return;
+
+        await Room.updateOne(
+            { roomCode },
+            {
+                $pull: { players: { userId: targetUserId } },
+                $addToSet: { bannedUsers: targetUserId }
+            }
+        );
+
+        const sockets = await io.in(roomCode).fetchSockets();
+        const targetSocket = sockets.find(
+            s => s.user.id === targetUserId
+        );
+
+        if (targetSocket) {
+            targetSocket.emit("banned", {
+                message: "You were banned from this room."
+            });
+
+            targetSocket.leave(roomCode);
+            targetSocket.currentRoom = null;
+        }
+
+        io.to(roomCode).emit("user-left", { mode: "banned", userId: targetUserId, username: targetSocket ? targetSocket.user.username : "A user" });
+    });
 
 }

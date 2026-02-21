@@ -83,7 +83,7 @@ function App() {
       {auth.loggedIn
         ?
         <RoomProvider toastRef={toastRef}>
-          <Whiteboard user={auth.user.username} logout={logout} />
+          <Whiteboard user={auth.user.id} logout={logout} />
         </RoomProvider>
         :
         <Homepage onLogin={handleAuth} />}

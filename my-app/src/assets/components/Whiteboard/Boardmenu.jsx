@@ -8,14 +8,14 @@ import RoomUsers from "./RoomUsers";
 import { socket } from "../../../socket";
 import { useRoom } from "../../context/RoomContext";
 
-export default function BoardMenu({username,logout}) {
+export default function BoardMenu({ logout,userId }) {
 
-    const [showList, setShowList]=useState(false)
-    const [showRoom,setShowRoom]=useState(false)
+    const [showList, setShowList] = useState(false)
+    const [showRoom, setShowRoom] = useState(false)
 
-    const {leaveRoom,roomCode}=useRoom();
+    const { leaveRoom, roomCode } = useRoom();
 
-    function closeList(){
+    function closeList() {
         setShowList(false)
         setShowRoom(false)
     }
@@ -24,15 +24,15 @@ export default function BoardMenu({username,logout}) {
         {
             label: 'Add',
             icon: 'pi pi-sign-out',
-            className:"custom-action",
+            className: "custom-action",
             command: () => {
-                roomCode?leaveRoom():logout();
+                roomCode ? leaveRoom() : logout();
             }
         },
         {
             label: 'Update',
             icon: 'pi pi-users',
-            className:"custom-action",
+            className: "custom-action",
             command: () => {
                 setShowRoom(true)
             }
@@ -40,7 +40,7 @@ export default function BoardMenu({username,logout}) {
         {
             label: 'Boards',
             icon: 'pi pi-clipboard',
-            className:"custom-action",
+            className: "custom-action",
             command: () => {
                 setShowList(true)
             }
@@ -49,9 +49,9 @@ export default function BoardMenu({username,logout}) {
 
     return (
         <>
-            <SpeedDial model={items} radius={120} type="quarter-circle" direction="down-right" style={{ top:20,left:20 }}  buttonClassName="bg-dark rounded-circle" />
-            {showList && <BoardList close={closeList} username={username}/>}
-            {showRoom && <RoomUsers close={closeList} />}
+            <SpeedDial model={items} radius={120} type="quarter-circle" direction="down-right" style={{ top: 20, left: 20 }} buttonClassName="bg-dark rounded-circle" />
+            {showList && <BoardList close={closeList} />}
+            {showRoom && <RoomUsers close={closeList} userId={userId} />}
         </>
     );
 

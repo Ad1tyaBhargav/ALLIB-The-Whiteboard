@@ -56,6 +56,8 @@ export function RoomProvider({ children, toastRef }) {
     setChats([]);
     setIsLocked(false);
     setGraceEndsAt(null);
+    setCursors({});
+    setAdmin(null);
 
     localStorage.removeItem("lastRoomCode");
   };
@@ -63,9 +65,9 @@ export function RoomProvider({ children, toastRef }) {
   useEffect(() => {
     if (!socket) return;
 
-    const handlePlayerList = ({players,admin}) => {
+    const handlePlayerList = ({ players, admin }) => {
       setPlayers(players);
-      setAdmin(admin.username);
+      setAdmin(admin.userId);
     };
 
     const handleUserJoined = (player) => {
@@ -76,9 +78,16 @@ export function RoomProvider({ children, toastRef }) {
       showToast("info", "User Joined", `${player.username} joined the room`);
     };
 
-    const handleUserLeft = ({ userId, username }) => {
+    const handleUserLeft = ({ mode, userId, username }) => {
       setPlayers(prev => prev.filter(p => p.userId !== userId));
-      showToast("info", "User left", `${username} left the room`);
+      mode === "left" && showToast("info", "User left", `${username} left the room`);
+      mode === "kicked" && showToast("warn", "User kicked", `${username} was kicked`);
+      mode === "banned" && showToast("warn", "User banned", `${username} was banned`);
+    };
+
+    const handleKicked = ({ message }) => {
+      showToast("warn", "Kicked from room", message);
+      resetRoomState();
     };
 
     const handleRoomClosed = ({ message }) => {
@@ -159,6 +168,8 @@ export function RoomProvider({ children, toastRef }) {
     socket.on("user-joined", handleUserJoined);
     socket.on("user-left", handleUserLeft);
     socket.on("room-closed", handleRoomClosed);
+    socket.on("kicked", handleKicked);
+    socket.on("banned", handleKicked);
 
     socket.on("board-sync", handleBoardSync);
     socket.on("stroke-start", handleStrokeStart);
@@ -179,6 +190,8 @@ export function RoomProvider({ children, toastRef }) {
       socket.off("user-joined", handleUserJoined);
       socket.off("user-left", handleUserLeft);
       socket.off("room-closed", handleRoomClosed);
+      socket.off("kicked", handleKicked);
+      socket.off("banned", handleKicked);
 
       socket.off("board-sync", handleBoardSync);
       socket.off("stroke-start", handleStrokeStart);

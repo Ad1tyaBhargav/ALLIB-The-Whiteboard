@@ -7,9 +7,9 @@ import PlayerCard from "./components/PlayerCard";
 
 const url = import.meta.env.VITE_SERVER;
 
-export default function RoomUsers({ close }) {
+export default function RoomUsers({ close, userId }) {
 
-    const { roomCode,players } = useRoom()
+    const { roomCode, players, admin } = useRoom()
 
     return (
         <>
@@ -25,10 +25,13 @@ export default function RoomUsers({ close }) {
                 <div className="player-list">
                     {players.map((player) => (
                         <PlayerCard
-                        key={player._id}
+                            key={player._id}
                             player={player}
+                            isAdmin={player.userId === admin}
+                            admin={admin}
+                            userId={userId}
                         />
-                       ))}
+                    ))}
                 </div>
             </div>
         </>
