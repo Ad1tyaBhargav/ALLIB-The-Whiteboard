@@ -137,12 +137,22 @@ export function RoomProvider({ children, toastRef }) {
       );
     };
 
-    const handleStrokeEnd = ({ stroke }) => {
-      setBoardData(prev =>
-        prev.map(el =>
-          el.id === stroke.id ? stroke : el
-        )
-      );
+    const handleActionAdded = ({ action }) => {
+      setBoardData(prev => {
+        // Remove temporary version if exists
+        const filtered = prev.filter(el => el.id !== action.id);
+        return [...filtered, action];
+      });
+    };
+
+    const handleActionUndo = ( actionId ) => {
+
+      console.log(actionId)
+      setBoardData(prev => prev.filter(obj => obj.id !== actionId));
+    };
+
+    const handleActionRedo = (action) => {
+      setBoardData(prev => [...prev, action]);
     };
 
     const handleCursorMove = ({ userId, username, x, y }) => {
@@ -160,9 +170,6 @@ export function RoomProvider({ children, toastRef }) {
       });
     };
 
-    const handleShapeAdd = ({ shape }) => {
-      setBoardData(prev => [...prev, shape]);
-    };
 
     socket.on("player-list", handlePlayerList);
     socket.on("user-joined", handleUserJoined);
@@ -174,8 +181,10 @@ export function RoomProvider({ children, toastRef }) {
     socket.on("board-sync", handleBoardSync);
     socket.on("stroke-start", handleStrokeStart);
     socket.on("stroke-update", handleStrokeUpdate);
-    socket.on("stroke-end", handleStrokeEnd);
-    socket.on("shape-add", handleShapeAdd);
+    socket.on("action-added", handleActionAdded);
+    socket.on("action-added", handleActionAdded);
+    socket.on("action-undo", handleActionUndo);
+    socket.on("action-redo", handleActionRedo);
 
     socket.on("room-grace-start", handleGraceStart);
     socket.on("room-grace-cancel", handleGraceCancel);
@@ -196,8 +205,9 @@ export function RoomProvider({ children, toastRef }) {
       socket.off("board-sync", handleBoardSync);
       socket.off("stroke-start", handleStrokeStart);
       socket.off("stroke-update", handleStrokeUpdate);
-      socket.off("stroke-end", handleStrokeEnd);
-      socket.off("shape-add", handleShapeAdd);
+      socket.off("action-added", handleActionAdded);
+      socket.off("action-undo", handleActionUndo);
+      socket.off("action-redo", handleActionRedo);
 
       socket.off("room-grace-start", handleGraceStart);
       socket.off("room-grace-cancel", handleGraceCancel);

@@ -2,29 +2,46 @@ import roomHandlers from "./roomHandlers.js";
 import boardHandlers from "./boardHandlers.js";
 import chatHandlers from "./chatHandlers.js";
 import Room from "../models/Room.js";
-import { activeUsers, graceTimers } from "./state.js";
+import { activeUsers, graceTimers, roomCache } from "./state.js";
+import { saveRoomToDB, removePlayerFromCache } from "./socket_Func.js";
 
 export default function socketHandlers(io) {
 
   io.on("connection", (socket) => {
     console.log("Socket connected with auth:", socket.user.username);
 
-    roomHandlers(io, socket,);
+    roomHandlers(io, socket);
     boardHandlers(io, socket);
     chatHandlers(io, socket);
 
+    setInterval(async () => {
+      for (const [roomCode, cache] of roomCache.entries()) {
+        try {
+          await Room.updateOne(
+            { roomCode },
+            { boardData: cache.boardData }
+          );
+        } catch (err) {
+          console.error("Auto-save failed for room:", roomCode);
+        }
+      }
+    }, 10000);
+
     const GRACE_MS = 30_000;
 
+    //Fix disconnect socket for caching
     socket.on("disconnect", async () => {
       const userId = socket.user?.id;
       const roomCode = socket.currentRoom;
-      const username =socket.user.username;
+      const username = socket.user.username;
+      const cache = roomCache.get(roomCode);
       if (!roomCode) return;
 
       const room = await Room.findOne({ roomCode });
       if (!room) return;
 
       activeUsers.delete(userId);
+      removePlayerFromCache(roomCode, userId);
 
       // 👑 ADMIN DISCONNECTED → START GRACE
       if (room.adminId === userId) {
@@ -33,6 +50,7 @@ export default function socketHandlers(io) {
         await Room.updateOne(
           { roomCode },
           {
+            boardData:cache.boardData,
             isLocked: true,
             graceEndsAt: new Date(Date.now() + GRACE_MS)
           }
@@ -71,6 +89,7 @@ export default function socketHandlers(io) {
             s.currentRoom = null;
           }
 
+          roomCache.delete(roomCode);
           graceTimers.delete(roomCode);
         }, GRACE_MS);
 

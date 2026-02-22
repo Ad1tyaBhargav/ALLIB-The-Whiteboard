@@ -1,46 +1,57 @@
 import Room from "../models/Room.js";
-import { activeUsers, graceTimers } from "./state.js";
+import { activeUsers, graceTimers, roomCache } from "./state.js";
+import { saveRoomToDB, removePlayerFromCache } from "./socket_Func.js";
 
 export default function roomHandlers(io, socket,) {
 
     socket.on("join-room", async ({ roomCode }, callback) => {
-        const safeCallback = typeof callback === "function"
-            ? callback
-            : () => { };
+        const safeCallback = typeof callback === "function" ? callback : () => { };
 
         try {
-            const room = await Room.findOne({ roomCode });
+            let room;
 
-            if (!room) {
-                safeCallback({
-                    success: false,
-                    message: "Invalid Room Code"
+            // 🔥 LOAD FROM CACHE FIRST
+            if (!roomCache.has(roomCode)) {
+                room = await Room.findOne({ roomCode }).lean();
+
+                if (!room) {
+                    return safeCallback({ success: false, message: "Invalid Room Code" });
+                }
+
+                roomCache.set(roomCode, {
+                    boardData: room.boardData || [],
+                    players: room.players || [],
+                    userStacks: new Map()
                 });
-                return;
             }
 
-            if (room.bannedUsers.includes(socket.user.id)) {
-                safeCallback({
-                    success: false,
-                    message: "You are banned from this room."
-                });
-                return;
-            }
-
-            if (room.players.length >= 4) {
-                safeCallback({
-                    success: false,
-                    message: "Room is full (max 4 players)"
-                });
-                return;
-            }
+            const cache = roomCache.get(roomCode);
+            room = room || await Room.findOne({ roomCode }).lean(); // only if needed
 
             const userId = socket.user.id;
             const username = socket.user.username;
             const isAdmin = room.adminId === userId;
 
+            // 🚫 Ban check
+            if (room.bannedUsers.includes(userId)) {
+                return safeCallback({ success: false, message: "You are banned from this room." });
+            }
+
+            // 🚫 Room full
+            if (cache.players.length >= 4) {
+                return safeCallback({ success: false, message: "Room is full (max 4 players)" });
+            }
+
+            // 🔐 Admin lock check
+            if (!isAdmin && room.isLocked) {
+                return safeCallback({
+                    success: false,
+                    message: "Room is locked. Admin disconnected."
+                });
+            }
+
             if (isAdmin) {
-                // Admin rejoined → cancel grace
+
                 if (graceTimers.has(roomCode)) {
                     clearTimeout(graceTimers.get(roomCode));
                     graceTimers.delete(roomCode);
@@ -54,83 +65,64 @@ export default function roomHandlers(io, socket,) {
                 io.to(roomCode).emit("room-grace-cancel");
             }
 
-            else {
-                // Non-admin trying to join
+            if (!isAdmin) {
                 if (room.isLocked) {
-                    safeCallback({
+                    return safeCallback({
                         success: false,
                         message: "Room is locked. Admin disconnected."
                     });
-                    return;
                 }
 
-                const adminCurrentRoom = activeUsers.get(room.adminId);
-                if (adminCurrentRoom !== roomCode) {
-                    safeCallback({
+                // Extra safety:
+                if (graceTimers.has(roomCode)) {
+                    return safeCallback({
                         success: false,
-                        message: "Admin is not active"
+                        message: "Room temporarily locked (admin grace period)."
                     });
-                    return;
                 }
             }
 
-            if (!isAdmin) {
-                const adminId = room.adminId;
-                const adminCurrentRoom = activeUsers.get(adminId);
-
-                if (!adminCurrentRoom || adminCurrentRoom !== roomCode) {
-                    callback({
-                        success: false,
-                        message: "Admin is not active"
-                    });
-                    return;
-                }
+            // 🧠 Initialize user stack
+            if (!cache.userStacks.has(userId)) {
+                cache.userStacks.set(userId, {
+                    undoStack: [],
+                    redoStack: []
+                });
             }
 
-            if (activeUsers.has(userId)) {
-                const oldRoom = activeUsers.get(userId);
-
-                if (oldRoom !== roomCode) {
-                    socket.to(oldRoom).emit("user-left", { userId, username });
-
-                    await Room.updateOne(
-                        { roomCode: oldRoom },
-                        { $pull: { players: { userId } } }
-                    );
-
-                    socket.leave(oldRoom);
-                }
-            }
-
+            // 🟢 Join room
             socket.join(roomCode);
             socket.currentRoom = roomCode;
             activeUsers.set(userId, roomCode);
 
+            // 🔄 Update players in cache
+            cache.players = cache.players.filter(p => p.userId !== userId);
+            cache.players.push({ userId, username, isAdmin });
+
+            // 🔥 SINGLE DB UPDATE (atomic)
             await Room.updateOne(
                 { roomCode },
-                { $pull: { players: { userId } } }
+                {
+                    $pull: { players: { userId } }
+                }
             );
 
             await Room.updateOne(
                 { roomCode },
                 {
                     $push: {
-                        players: {
-                            userId,
-                            username,
-                            isAdmin
-                        }
+                        players: { userId, username, isAdmin }
                     }
                 }
             );
 
-            const updatedRoom = await Room.findOne({ roomCode }).select("players boardData");
+            // 📡 Emit using CACHE
+            socket.emit("player-list", {
+                players: cache.players,
+                admin: cache.players.find(p => p.isAdmin)
+            });
 
-            socket.emit("player-list", { players: updatedRoom.players, admin: updatedRoom.players.find(p => p.isAdmin) });
-
-            console.log(updatedRoom.players)
-
-            socket.emit("board-sync", updatedRoom.boardData);
+            socket.emit("board-sync", cache.boardData);
 
             socket.to(roomCode).emit("user-joined", {
                 userId,
@@ -140,14 +132,11 @@ export default function roomHandlers(io, socket,) {
 
             console.log(`${username} joined room ${roomCode}`);
 
-            callback({
-                success: true
-            });
+            safeCallback({ success: true });
+
         } catch (err) {
-            callback({
-                success: false,
-                message: "Join room failed"
-            });
+            console.error(err);
+            safeCallback({ success: false, message: "Join room failed" });
         }
     });
 
@@ -166,6 +155,8 @@ export default function roomHandlers(io, socket,) {
             callback?.({ ok: true });
             return;
         }
+
+        removePlayerFromCache(roomCode,userId);
 
         const isAdmin = room.adminId === userId;
 
@@ -189,6 +180,10 @@ export default function roomHandlers(io, socket,) {
                     s.leave(roomCode);
                     s.currentRoom = null;
                 }
+
+                await saveRoomToDB(roomCode);
+
+                roomCache.delete(roomCode)
 
                 console.log(`🔒 Room ${roomCode} closed`);
 
@@ -228,6 +223,8 @@ export default function roomHandlers(io, socket,) {
             { $pull: { players: { userId: targetUserId } } }
         );
 
+        removePlayerFromCache(roomCode,targetUserId);
+
         // Find target socket
         const sockets = await io.in(roomCode).fetchSockets();
         const targetSocket = sockets.find(
@@ -259,6 +256,8 @@ export default function roomHandlers(io, socket,) {
                 $addToSet: { bannedUsers: targetUserId }
             }
         );
+
+        removePlayerFromCache(roomCode,targetUserId);
 
         const sockets = await io.in(roomCode).fetchSockets();
         const targetSocket = sockets.find(

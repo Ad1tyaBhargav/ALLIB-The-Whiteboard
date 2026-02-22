@@ -4,7 +4,7 @@ import { socket } from "../../../socket";
 import { useRoom } from "../../context/RoomContext";
 import Toolbar from "./toolbar";
 
-export default function Board({user}) {
+export default function Board({ user }) {
 
   const [undone, setUndone] = useState([]);
   const [color, setColor] = useState("#000000");
@@ -65,6 +65,7 @@ export default function Board({user}) {
         strokeWidth,
         tool,
         tension: 0.5,
+        createdBy: user
       };
 
       currentStrokeRef.current = stroke;
@@ -77,7 +78,7 @@ export default function Board({user}) {
       setBoardData((prev) => [
         ...prev,
         {
-          id: `${tool}_${prev.length + 1}`,
+          id: `${tool}_${Date.now()}_${socket.id}`,
           type: tool,
           x: pos.x,
           y: pos.y,
@@ -87,6 +88,7 @@ export default function Board({user}) {
           color,
           strokeWidth,
           fillEnabled,
+          createdBy: user
         },
       ]);
     }
@@ -220,20 +222,11 @@ export default function Board({user}) {
 
   // ✅ Undo / Redo
   const undo = () => {
-    if (!boardData.length) return;
-    const newboardData = [...boardData];
-    const last = newboardData.pop();
-    setBoardData(newboardData);
-    setUndone([...undone, last]);
-    console.log(boardData)
+    socket.emit("undo-action", { roomCode });
   };
 
   const redo = () => {
-    if (!undone.length) return;
-    const newUndone = [...undone];
-    const restored = newUndone.pop();
-    setUndone(newUndone);
-    setBoardData([...boardData, restored]);
+    socket.emit("redo-action", { roomCode });
   };
 
   // ✅ Clear Canvas
@@ -317,8 +310,8 @@ export default function Board({user}) {
     stage.batchDraw();
 
     const dataURL = stage.toDataURL({
-      x:0,
-      y:0,
+      x: 0,
+      y: 0,
       width: PREVIEW_WIDTH,
       height: PREVIEW_HEIGHT,
       pixelRatio: 0.3,

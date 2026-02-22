@@ -1,21 +1,31 @@
 import Room from "../models/Room.js";
+import { roomCache } from "./state.js";
 
-function ChatMsgHandle({ roomcode, username, msg }) {
-    io.to(roomcode).emit("msg", `${username} : ${msg}`);
+async function saveRoomToDB(roomCode) {
+    const cache = roomCache.get(roomCode);
+    if (!cache) return;
+
+    try {
+        await Room.updateOne(
+            { roomCode },
+            { boardData: cache.boardData }
+        );
+        console.log(`Room ${roomCode} saved to DB`);
+    } catch (err) {
+        console.error("Manual save failed:", roomCode);
+    }
 }
 
-async function DisconnectHandle(roomCode, socket,activeUsers) {
-    socket.leave(roomCode);
-    const username = socket.user.username;
+async function removePlayerFromCache(roomCode, userId) {
+    const cache = roomCache.get(roomCode);
 
-    console.log(`${username} left room ${roomCode}`);
+    if (cache) {
+        //find player in cache
+        cache.players = cache.players.filter(p => p.userId !== userId);
 
-    await Room.updateOne(
-        { roomCode: roomCode },
-        { $pull: { players: { username: username } } }
-    );
-
-    socket.to(roomCode).emit("user-left", { username });
+        // cleanup user stack
+        cache.userStacks.delete(userId);
+    }
 }
 
-export { ChatMsgHandle, DisconnectHandle }
+export { saveRoomToDB, removePlayerFromCache }

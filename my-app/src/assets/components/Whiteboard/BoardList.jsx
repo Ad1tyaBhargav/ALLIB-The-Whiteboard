@@ -121,6 +121,7 @@ export default function BoardList({ close }) {
                                 key={room._id}
                                 room={room}
                                 deleteRoom={deleteRoom}
+                                close={close}
                             />
                         ))
                     )}

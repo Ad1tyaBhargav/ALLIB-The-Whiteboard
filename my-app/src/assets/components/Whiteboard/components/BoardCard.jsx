@@ -6,15 +6,12 @@ export default function BoardCard({ room, deleteRoom }) {
     const { joinRoom } = useRoom()
 
     return (
-        <div className="board-card" >
+        <div className="board-card" onClick={() => {
+            joinRoom(room.roomCode);
+            close();
+        }}>
 
-            <div
-                className="preview-wrapper"
-                onClick={() => {
-                    joinRoom(room.roomCode);
-                    close();
-                }}
-            >
+            <div className="preview-wrapper">
                 <img
                     src={room.previewImage || "/placeholder.png"}
                     alt="Board Preview"

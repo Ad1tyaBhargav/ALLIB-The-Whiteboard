@@ -25,7 +25,7 @@ export default function RoomUsers({ close, userId }) {
                 <div className="player-list">
                     {players.map((player) => (
                         <PlayerCard
-                            key={player._id}
+                            key={player.userId}
                             player={player}
                             isAdmin={player.userId === admin}
                             admin={admin}

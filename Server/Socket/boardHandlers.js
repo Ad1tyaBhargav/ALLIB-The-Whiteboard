@@ -1,5 +1,6 @@
 import Room from "../models/Room.js";
 import cloudinary from "../utils/cloudinary.js"
+import { roomCache } from "./state.js";
 
 export default function boardHandlers(io, socket) {
   // stroke starts (DO NOT save to DB)
@@ -14,21 +15,70 @@ export default function boardHandlers(io, socket) {
 
   // stroke ends (SAVE ONCE)
   socket.on("stroke-end", async ({ roomCode, stroke }) => {
-    await Room.updateOne(
-      { roomCode },
-      { $push: { boardData: stroke } }
-    );
+    const cache = roomCache.get(roomCode);
+    if (!cache) return;
 
-    socket.to(roomCode).emit("stroke-end", { stroke });
+    const userStack = cache.userStacks.get(socket.user.id);
+    if (!userStack) return;
+
+    cache.boardData.push(stroke);
+
+    userStack.undoStack.push(stroke);
+    userStack.redoStack = [];
+
+    io.to(roomCode).emit("action-added", { action: stroke });
   });
 
   socket.on("shape-add", async ({ roomCode, shape }) => {
-    await Room.updateOne(
-      { roomCode },
-      { $push: { boardData: shape } }
-    );
+    const cache = roomCache.get(roomCode);
+    if (!cache) return;
 
-    socket.to(roomCode).emit("shape-add", { shape });
+    const userStack = cache.userStacks.get(socket.user.id);
+    if (!userStack) return;
+
+    cache.boardData.push(shape);
+
+    userStack.undoStack.push(shape);
+    userStack.redoStack = [];
+
+    io.to(roomCode).emit("action-added", { action: shape });
+  });
+
+  socket.on("undo-action", ({ roomCode }) => {
+
+    const cache = roomCache.get(roomCode);
+    if (!cache) return;
+
+    const userStack = cache.userStacks.get(socket.user.id);
+    if (!userStack) return;
+
+    const lastAction = userStack.undoStack.pop();
+    if (!lastAction) return;
+
+    userStack.redoStack.push(lastAction);
+
+    const index = cache.boardData.findIndex(obj => obj.id === lastAction.id);
+    if (index !== -1) {
+      cache.boardData.splice(index, 1);
+    }
+
+    io.to(roomCode).emit("action-undo", lastAction.id);
+  });
+
+  socket.on("redo-action", ({ roomCode }) => {
+
+    const cache = roomCache.get(roomCode);
+    if (!cache) return;
+
+    const userStack = cache.userStacks.get(socket.user.id);
+    if (!userStack || userStack.redoStack.length === 0) return;
+
+    const action = userStack.redoStack.pop();
+    userStack.undoStack.push(action);
+
+    cache.boardData.push(action);
+
+    io.to(roomCode).emit("action-redo", action);
   });
 
   socket.on("cursor-move", ({ roomCode, x, y, username }) => {
@@ -47,11 +97,11 @@ export default function boardHandlers(io, socket) {
   });
 
   socket.on("board-preview", async ({ roomCode, image }) => {
-    if (!roomCode || !image){
+    if (!roomCode || !image) {
       console.log(roomCode)
       console.log(image)
       return;
-    } 
+    }
 
     try {
       const room = await Room.findOne({ roomCode });
