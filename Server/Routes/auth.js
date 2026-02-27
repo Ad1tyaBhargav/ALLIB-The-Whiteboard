@@ -4,8 +4,9 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import dotenv from "dotenv";
 
-const router = express.Router();
 dotenv.config()
+
+const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -14,6 +15,8 @@ router.options(/.*/, (req, res) => res.sendStatus(200));
 router.post("/signup", async (req, res) => {
   const { username, password } = req.body;
 
+  console.log(username + " " + password)
+
   const existingUser = await User.findOne({ username });
   if (existingUser) return res.json({ error: "User already exists" });
 
@@ -21,7 +24,7 @@ router.post("/signup", async (req, res) => {
 
   const user = await User.create({ username, password: hashed });
 
-  return res.json({ message: "Account created", user:user.username , status:"200" });
+  return res.json({ message: "Account created", user: user.username, status: "200" });
 });
 
 router.post("/login", async (req, res) => {
@@ -39,7 +42,7 @@ router.post("/login", async (req, res) => {
     { expiresIn: "7d" }
   );
 
-  res.json({ message: "Login success", token, username: user.username, status:"200" });
+  res.json({ message: "Login success", token, username: user.username, status: "200" });
 });
 
 router.get("/verify", (req, res) => {

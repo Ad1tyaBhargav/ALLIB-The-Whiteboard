@@ -9,6 +9,7 @@ import BoardCard from "./components/BoardCard";
 import { InputText } from 'primereact/inputtext';
 import { useRoom } from "../../context/RoomContext";
 import { Toast } from 'primereact/toast';
+import AvatarUpload from "./AvatarUpload";
 
 const url = import.meta.env.VITE_SERVER;
 
@@ -106,10 +107,19 @@ export default function BoardList({ close }) {
             <Toast ref={toast} />
             <div className="BoardList">
                 <div className="BoardListCloseButton ">
-                    <h2>Board Menu</h2>
+                    <h2>Profile</h2>
                     <Button icon="pi pi-times" className="rounded" onClick={close} />
                 </div>
-
+                <div className="d-flex justify-content-center mb-3">
+                    <AvatarUpload
+                        size={140}
+                        onUpload={(file) => {
+                            console.log("Selected file:", file);
+                            // upload to server here
+                        }}
+                    />
+                </div>
+                <h2>Rooms</h2>
                 {loading && <p>Loading boards...</p>}
 
                 <div className="rooms-container">

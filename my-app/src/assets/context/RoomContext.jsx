@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { socket } from "../../socket";
 
 const RoomContext = createContext();
@@ -10,7 +10,8 @@ export function RoomProvider({ children, toastRef }) {
   const [chats, setChats] = useState([]);
   const [isLocked, setIsLocked] = useState(false);
   const [graceEndsAt, setGraceEndsAt] = useState(null);
-  const [cursors, setCursors] = useState({});
+  const [staticCursors, setStaticCursors] = useState({});
+  const cursorsRef = useRef({})
   const [admin, setAdmin] = useState(null);
   const [viewport, setViewport] = useState({
     scale: 1,
@@ -35,6 +36,7 @@ export function RoomProvider({ children, toastRef }) {
         return;
       }
       localStorage.setItem("lastRoomCode", roomCode);
+      showToast("success", "Room created", `New room created: ${roomCode}`);
       setRoomCode(roomCode);
     });
 
@@ -56,7 +58,7 @@ export function RoomProvider({ children, toastRef }) {
     setChats([]);
     setIsLocked(false);
     setGraceEndsAt(null);
-    setCursors({});
+    setStaticCursors({});
     setAdmin(null);
 
     localStorage.removeItem("lastRoomCode");
@@ -145,7 +147,7 @@ export function RoomProvider({ children, toastRef }) {
       });
     };
 
-    const handleActionUndo = ( actionId ) => {
+    const handleActionUndo = (actionId) => {
 
       console.log(actionId)
       setBoardData(prev => prev.filter(obj => obj.id !== actionId));
@@ -155,15 +157,67 @@ export function RoomProvider({ children, toastRef }) {
       setBoardData(prev => [...prev, action]);
     };
 
-    const handleCursorMove = ({ userId, username, x, y }) => {
-      setCursors(prev => ({
+    const handleCursorSync = (cursorList) => {
+      const staticData = {};
+      const liveData = {};
+
+      cursorList.forEach(c => {
+        staticData[c.userId] = {
+          userId: c.userId,
+          avatar: c.avatarUrl,
+          color: c.color,
+          username: c.username
+        };
+
+        liveData[c.userId] = {
+          userId: c.userId,
+          x: c.x ?? 0,
+          y: c.y ?? 0,
+          targetX: c.x ?? 0,
+          targetY: c.y ?? 0
+        };
+      });
+
+      cursorsRef.current = liveData;
+      setStaticCursors(staticData);
+    }
+
+    const handleCursorNew = (cursor) => {
+
+      setStaticCursors(prev => ({
         ...prev,
-        [userId]: { x, y, username }
+        [cursor.userId]: {
+          userId: cursor.userId,
+          avatar: cursor.avatarUrl,   // match backend field
+          color: cursor.color
+        }
       }));
+
+      // 2️⃣ Add to live ref (no render)
+      cursorsRef.current[cursor.userId] = {
+        userId: cursor.userId,
+        x: cursor.x ?? 0,
+        y: cursor.y ?? 0,
+        targetX: cursor.x ?? 0,
+        targetY: cursor.y ?? 0
+      };
+    };
+
+    const handleCursorMove = ({ userId, x, y }) => {
+      const cursor = cursorsRef.current[userId];
+      if (!cursor) return;
+
+      cursor.targetX = x;
+      cursor.targetY = y;
     };
 
     const handleCursorLeave = ({ userId }) => {
-      setCursors(prev => {
+
+      // Remove from live ref (no re-render)
+      delete cursorsRef.current[userId];
+
+      // Remove from static state (one re-render)
+      setStaticCursors(prev => {
         const copy = { ...prev };
         delete copy[userId];
         return copy;
@@ -191,6 +245,8 @@ export function RoomProvider({ children, toastRef }) {
 
     socket.on("receive-message", handleReceiveMessage);
 
+    socket.on("cursor-sync", handleCursorSync);
+    socket.on("cursor-new", handleCursorNew);
     socket.on("cursor-move", handleCursorMove);
     socket.on("cursor-leave", handleCursorLeave);
 
@@ -214,6 +270,8 @@ export function RoomProvider({ children, toastRef }) {
 
       socket.off("receive-message", handleReceiveMessage);
 
+      socket.off("cursor-sync", handleCursorSync);
+      socket.off("cursor-new", handleCursorNew);
       socket.off("cursor-move", handleCursorMove);
       socket.off("cursor-leave", handleCursorLeave);
     };
@@ -231,7 +289,8 @@ export function RoomProvider({ children, toastRef }) {
 
         chats,
 
-        cursors,
+        staticCursors,
+        cursorsRef,
         viewport,
         setViewport,
 

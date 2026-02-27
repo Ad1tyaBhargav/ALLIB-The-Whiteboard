@@ -1,4 +1,4 @@
-import { Button } from "primereact/button"
+import { Avatar } from 'primereact/avatar';
 import { socket } from "../../../../socket"
 import { useRoom } from "../../../context/RoomContext"
 
@@ -8,9 +8,13 @@ export default function PlayerCard({ player, isAdmin, admin, userId }) {
 
     return (
         <div key={player.id} className="player-item" id={player.userId}>
-            <span className="player-name">
-                {player.username}
-            </span>
+            <div  className='d-flex justify-content-center align-items-center gap-4 '>
+                <Avatar image={player.avatarUrl} size="xlarge" shape="circle" />
+
+                <span className='text-center' >
+                    {player.username}
+                </span>
+            </div>
             {player.isAdmin && (
                 <span className="admin-badge font-xl ml-2">
                     <div className="fs-2">👑</div>

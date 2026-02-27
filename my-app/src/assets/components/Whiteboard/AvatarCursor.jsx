@@ -1,22 +1,16 @@
 import React, { useEffect, useState } from "react";
 
-export default function AvatarCursor({ avatar, x, y,viewport }) {
-    if (x == null || y == null) return null;
+export default function AvatarCursor({ avatar, color }) {
 
-    const screenX = x * viewport.scale + viewport.x;
-    const screenY = y * viewport.scale + viewport.y;
+    const border=`4px solid ${color}`
 
     return (
         <>
             {/* Custom avatar cursor */}
             <div
                 style={{
-                    position: "fixed",
-                    top: screenY,
-                    left: screenX,
                     transform: "translate(-50%, -50%)",
                     pointerEvents: "none",
-                    zIndex: 9999,
                 }}
             >
                 {/* Avatar Circle */}
@@ -26,12 +20,21 @@ export default function AvatarCursor({ avatar, x, y,viewport }) {
                         src={avatar}
                         alt="avatar"
                         style={{
-                            border: "5px solid blue",  //custom and  random colors
+                            width: 40,
+                            height: 40,
+                            borderRadius: "50%",
+                            border,
+                            objectFit: "cover"
                         }}
                     />
 
                     {/* Little arrow triangle (pointer) */}
-                    <div />
+                    <div style={{
+                        position:"relative",
+                        bottom:14,
+                        left:10,
+                        backgroundColor: color,
+                    }} />
                 </div>
             </div>
         </>

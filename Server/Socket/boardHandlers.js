@@ -1,6 +1,6 @@
 import Room from "../models/Room.js";
 import cloudinary from "../utils/cloudinary.js"
-import { roomCache } from "./state.js";
+import { roomCache, roomCursors } from "./state.js";
 
 export default function boardHandlers(io, socket) {
   // stroke starts (DO NOT save to DB)
@@ -81,19 +81,18 @@ export default function boardHandlers(io, socket) {
     io.to(roomCode).emit("action-redo", action);
   });
 
-  socket.on("cursor-move", ({ roomCode, x, y, username }) => {
-    socket.to(roomCode).emit("cursor-move", {
-      userId: socket.userId,
-      username,
-      x,
-      y
-    });
-  });
+  socket.on("cursor-move", ({ roomCode, x, y }) => {
+    const cursorMap = roomCursors.get(roomCode);
+    if (!cursorMap) return;
 
-  socket.on("cursor-leave", ({ roomCode }) => {
-    socket.to(roomCode).emit("cursor-leave", {
-      userId: socket.userId
-    });
+    const userId = socket.user.id;
+    const cursor = cursorMap.get(userId);
+    if (!cursor) return;
+
+    cursor.x = x;
+    cursor.y = y;
+
+    socket.to(roomCode).emit("cursor-move", { userId, x, y });
   });
 
   socket.on("board-preview", async ({ roomCode, image }) => {

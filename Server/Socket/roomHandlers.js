@@ -1,6 +1,7 @@
 import Room from "../models/Room.js";
-import { activeUsers, graceTimers, roomCache } from "./state.js";
-import { saveRoomToDB, removePlayerFromCache } from "./socket_Func.js";
+import User from "../models/User.js";
+import { activeUsers, graceTimers, roomCache, roomCursors } from "./state.js";
+import { saveRoomToDB, removePlayerFromCache, generateBrightColor, cleanCursorCache } from "./socket_Func.js";
 
 export default function roomHandlers(io, socket,) {
 
@@ -8,15 +9,14 @@ export default function roomHandlers(io, socket,) {
         const safeCallback = typeof callback === "function" ? callback : () => { };
 
         try {
-            let room;
+            let room = await Room.findOne({ roomCode }).lean();
+
+            if (!room) {
+                return safeCallback({ success: false, message: "Invalid Room Code" });
+            }
 
             // 🔥 LOAD FROM CACHE FIRST
             if (!roomCache.has(roomCode)) {
-                room = await Room.findOne({ roomCode }).lean();
-
-                if (!room) {
-                    return safeCallback({ success: false, message: "Invalid Room Code" });
-                }
 
                 roomCache.set(roomCode, {
                     boardData: room.boardData || [],
@@ -26,11 +26,14 @@ export default function roomHandlers(io, socket,) {
             }
 
             const cache = roomCache.get(roomCode);
-            room = room || await Room.findOne({ roomCode }).lean(); // only if needed
+
 
             const userId = socket.user.id;
             const username = socket.user.username;
             const isAdmin = room.adminId === userId;
+
+            const user = await User.findById(userId).select("avatar").lean();
+            const avatarUrl = user?.avatar || null;
 
             // 🚫 Ban check
             if (room.bannedUsers.includes(userId)) {
@@ -97,7 +100,7 @@ export default function roomHandlers(io, socket,) {
 
             // 🔄 Update players in cache
             cache.players = cache.players.filter(p => p.userId !== userId);
-            cache.players.push({ userId, username, isAdmin });
+            cache.players.push({ userId, username, avatarUrl, isAdmin });
 
             // 🔥 SINGLE DB UPDATE (atomic)
             await Room.updateOne(
@@ -116,6 +119,23 @@ export default function roomHandlers(io, socket,) {
                 }
             );
 
+            if (!roomCursors.has(roomCode)) {
+                roomCursors.set(roomCode, new Map());
+            }
+
+            const cursorMap = roomCursors.get(roomCode);
+            const cursorCount = cursorMap.size;
+
+            const cursor = {
+                userId,
+                avatarUrl,
+                x: 0,
+                y: 0,
+                color: generateBrightColor(cursorCount)
+            };
+
+            cursorMap.set(userId, cursor);
+
             // 📡 Emit using CACHE
             socket.emit("player-list", {
                 players: cache.players,
@@ -124,11 +144,16 @@ export default function roomHandlers(io, socket,) {
 
             socket.emit("board-sync", cache.boardData);
 
+            socket.emit("cursor-sync", Array.from(cursorMap.values()));
+
             socket.to(roomCode).emit("user-joined", {
                 userId,
                 username,
+                avatarUrl,
                 isAdmin
             });
+
+            socket.to(roomCode).emit("cursor-new", cursor);
 
             console.log(`${username} joined room ${roomCode}`);
 
@@ -156,7 +181,8 @@ export default function roomHandlers(io, socket,) {
             return;
         }
 
-        removePlayerFromCache(roomCode,userId);
+        removePlayerFromCache(roomCode, userId);
+        cleanCursorCache(io, roomCode, userId)
 
         const isAdmin = room.adminId === userId;
 
@@ -223,7 +249,7 @@ export default function roomHandlers(io, socket,) {
             { $pull: { players: { userId: targetUserId } } }
         );
 
-        removePlayerFromCache(roomCode,targetUserId);
+        removePlayerFromCache(roomCode, targetUserId);
 
         // Find target socket
         const sockets = await io.in(roomCode).fetchSockets();
@@ -257,7 +283,7 @@ export default function roomHandlers(io, socket,) {
             }
         );
 
-        removePlayerFromCache(roomCode,targetUserId);
+        removePlayerFromCache(roomCode, targetUserId);
 
         const sockets = await io.in(roomCode).fetchSockets();
         const targetSocket = sockets.find(

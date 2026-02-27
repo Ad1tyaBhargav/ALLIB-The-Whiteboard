@@ -191,7 +191,6 @@ body {
   transform: translateX(-50%) rotate(-90deg);
   width: 15px;
   height: 15px;
-  background-color: blue;
   clip-path: polygon(0 0, 100% 0, 0 100%);
 }
 

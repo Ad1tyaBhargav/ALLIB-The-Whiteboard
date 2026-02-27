@@ -8,6 +8,7 @@ import authRoutes from "./Routes/auth.js";
 import roomRoutes from "./Routes/rooms.js"
 import socketHandlers from "./Socket/main.js";
 import connectDB from "./utils/database.js";
+import userRoutes from "./Routes/avatarupload.js"
 
 const app = express();
 const server = createServer(app);
@@ -43,7 +44,7 @@ dotenv.config()
 
 io.use((socket, next) => {
     const token = socket.handshake.auth.token;
-    if (!token) return next(new Error("No token"));
+    if (!token) return next(new Error("No token")); 
 
     try {
         const user = jwt.verify(token, process.env.JWT_SECRET);
@@ -61,6 +62,8 @@ app.use("/room", roomRoutes)
 const rooms = {}
 
 app.use("/auth", authRoutes);
+
+app.use("/user",userRoutes);
 
 socketHandlers(io)
 

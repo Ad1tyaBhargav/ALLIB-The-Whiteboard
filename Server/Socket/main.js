@@ -3,7 +3,7 @@ import boardHandlers from "./boardHandlers.js";
 import chatHandlers from "./chatHandlers.js";
 import Room from "../models/Room.js";
 import { activeUsers, graceTimers, roomCache } from "./state.js";
-import { saveRoomToDB, removePlayerFromCache } from "./socket_Func.js";
+import { saveRoomToDB, removePlayerFromCache,cleanCursorCache } from "./socket_Func.js";
 
 export default function socketHandlers(io) {
 
@@ -42,6 +42,7 @@ export default function socketHandlers(io) {
 
       activeUsers.delete(userId);
       removePlayerFromCache(roomCode, userId);
+      cleanCursorCache(io,roomCode,userId);
 
       // 👑 ADMIN DISCONNECTED → START GRACE
       if (room.adminId === userId) {

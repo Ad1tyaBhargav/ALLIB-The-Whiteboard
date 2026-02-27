@@ -3,24 +3,11 @@ import Room from "../models/Room.js";
 import User from "../models/User.js";
 import { v4 as uuidv4 } from "uuid";
 import jwt from "jsonwebtoken";
+import authMiddleware from "../middleware/auth.js";
 
 const router = express.Router();
 
 router.options(/.*/, (req, res) => res.sendStatus(200));
-
-const authMiddleware = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: "No token" });
-
-    const token = authHeader.split(" ")[1];
-    try {
-        const user = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = user;
-        next();
-    } catch {
-        return res.status(401).json({ error: "Invalid token" });
-    }
-};
 
 router.post("/create-room", authMiddleware, async (req, res) => {
     const roomCode = uuidv4().slice(0, 6).toUpperCase();
