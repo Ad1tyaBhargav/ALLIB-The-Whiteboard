@@ -1,14 +1,14 @@
 import { Avatar } from 'primereact/avatar';
-import { socket } from "../../../../socket"
 import { useRoom } from "../../../context/RoomContext"
+import ConfirmScreen from './ConfirmScreen';
 
-export default function PlayerCard({ player, isAdmin, admin, userId }) {
+export default function PlayerCard({ player, admin, userId }) {
 
-    const { roomCode } = useRoom()
+    const { roomCode, controlUser, mutedUsers } = useRoom()
 
     return (
         <div key={player.id} className="player-item" id={player.userId}>
-            <div  className='d-flex justify-content-center align-items-center gap-4 '>
+            <div className='d-flex justify-content-center align-items-center gap-4 '>
                 <Avatar image={player.avatarUrl} size="xlarge" shape="circle" />
 
                 <span className='text-center' >
@@ -24,29 +24,40 @@ export default function PlayerCard({ player, isAdmin, admin, userId }) {
             {/* 🔴 Kick / Ban - visible ONLY to admin, and not on self */}
             {userId === admin && !(player.isAdmin) && (
                 <div className="d-flex gap-3">
-                    <button
-                        className="btn btn-warning p-2 fs-3 rounded-circle"
-                        onClick={() =>
-                            socket.emit("kick-user", {
-                                roomCode,
-                                targetUserId: player.userId,
-                            })
-                        }
-                    >🦶
-                    </button>
+                    <ConfirmScreen
+                        lable={"🦶"}
+                        header={"KICKING"}
+                        message={<>
+                            Are you sure you want to kick {player.username}?
+                        </>}
+                        onConfirm={() => controlUser("kick-user", roomCode, player.userId)}
+                    />
 
-                    <button
+                    <ConfirmScreen
+                        lable={"🚫"}
+                        header={"BANNING"}
+                        message={<>
+                            Are you sure you want to ban {player.username}? <br />
+                            Will never be able to join again.
+                        </>}
+                        onConfirm={() => controlUser("ban-user", roomCode, player.userId)}
+                    />
 
-                        className="btn btn-danger p-2 fs-3 rounded-circle"
-                        onClick={() =>
-                            socket.emit("ban-user", {
-                                roomCode,
-                                targetUserId: player.userId,
-                            })
+                    <ConfirmScreen
+                        lable={mutedUsers.includes(player.userId) ? "🔇" : "🔊"}
+                        header={"BANNING"}
+                        message={mutedUsers.includes(player.userId) ?
+                            <>
+                                Are you sure you want to unmute {player.username}? <br />
+                                Will able to chat now.
+                            </> :
+                            <>
+                                Are you sure you want to mute {player.username}? <br />
+                                Will not able to chat.
+                            </>
                         }
-                    >
-                        🚫
-                    </button>
+                        onConfirm={() => controlUser("toggle-mute", roomCode, player.userId)}
+                    />
                 </div>
             )}
         </div>

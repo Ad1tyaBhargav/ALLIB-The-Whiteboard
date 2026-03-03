@@ -6,13 +6,13 @@ import Toolbar from "./toolbar";
 
 export default function Board({ user }) {
 
-  const [undone, setUndone] = useState([]);
   const [color, setColor] = useState("#000000");
   const [tool, setTool] = useState("pen");
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [selectedId, setSelectedId] = useState(null);
   const [fillEnabled, setFillEnabled] = useState(false);
   const { boardData, setBoardData, roomCode, isLocked, setViewport, admin } = useRoom()
+  const isFreehand = ["pencil", "marker", "brush", "sketch", "spray", "eraser"].includes(tool);
 
   const stageRef = useRef(null);
   const trRef = useRef(null);
@@ -56,7 +56,7 @@ export default function Board({ user }) {
     isDrawing.current = true;
 
     // Shape creation logic
-    if (tool === "pen" || tool === "eraser") {
+    if (isFreehand) {
       const stroke = {
         id: `line_${Date.now()}_${socket.id}`,
         type: "line",
@@ -64,7 +64,6 @@ export default function Board({ user }) {
         color,
         strokeWidth,
         tool,
-        tension: 0.5,
         createdBy: user
       };
 
@@ -118,7 +117,7 @@ export default function Board({ user }) {
     // =========================
     // ✏️ FREEHAND (pen / eraser)
     // =========================
-    if ((tool === "pen" || tool === "eraser") && currentStrokeRef.current) {
+    if (isFreehand && currentStrokeRef.current) {
       const prevStroke = currentStrokeRef.current;
       const pts = prevStroke.points;
       const lastX = pts[pts.length - 2];
@@ -130,7 +129,15 @@ export default function Board({ user }) {
 
       if (distance < MIN_DISTANCE) return;
 
-      const newPoints = [...pts, point.x, point.y];
+      let newX = point.x;
+      let newY = point.y;
+
+      if (tool === "sketch") {
+        newX += (Math.random() - 0.5) * 1.5;
+        newY += (Math.random() - 0.5) * 1.5;
+      }
+
+      const newPoints = [...pts, newX, newY];
 
       const updatedStroke = {
         ...prevStroke,
@@ -417,6 +424,7 @@ export default function Board({ user }) {
         clearCanvas={clearCanvas}
         isAdmin={isAdmin}
         stageRef={stageRef}
+        isfreehand={isFreehand}
       />
 
 
@@ -495,12 +503,29 @@ export default function Board({ user }) {
                     id={el.id}
                     points={el.points}
                     stroke={el.color}
-                    strokeWidth={el.strokeWidth}
+                    strokeWidth={
+                      el.tool === "marker" ? el.strokeWidth * 3 :
+                        el.tool === "brush" ? el.strokeWidth * 2 :
+                          el.strokeWidth
+                    }
+                    opacity={
+                      el.tool === "marker" ? 0.4 :
+                        el.tool === "pencil" ? 0.8 :
+                          1
+                    }
+                    tension={
+                      el.tool === "pencil" ? 0 :
+                        el.tool === "sketch" ? 0.2 :
+                          0.6
+                    }
                     lineCap="round"
                     lineJoin="round"
-                    tension={0.6}
                     globalCompositeOperation={
-                      el.tool === "eraser" ? "destination-out" : "source-over"
+                      el.tool === "eraser"
+                        ? "destination-out"
+                        : el.tool === "marker"
+                          ? "multiply"
+                          : "source-over"
                     }
                     draggable={tool === "select"}
                     onClick={() => setSelectedId(el.id)}

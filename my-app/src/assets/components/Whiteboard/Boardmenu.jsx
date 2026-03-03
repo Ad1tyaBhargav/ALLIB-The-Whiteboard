@@ -5,7 +5,7 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { useState } from "react";
 import RoomUsers from "./RoomUsers";
-import { socket } from "../../../socket";
+import { ConfirmDialog } from "primereact/confirmdialog";
 import { useRoom } from "../../context/RoomContext";
 
 export default function BoardMenu({ logout,userId }) {
@@ -49,6 +49,7 @@ export default function BoardMenu({ logout,userId }) {
 
     return (
         <>
+            <ConfirmDialog />
             <SpeedDial model={items} radius={120} type="quarter-circle" direction="down-right" style={{ top: 20, left: 20 }} buttonClassName="bg-dark rounded-circle" />
             {showList && <BoardList close={closeList} />}
             {showRoom && <RoomUsers close={closeList} userId={userId} />}

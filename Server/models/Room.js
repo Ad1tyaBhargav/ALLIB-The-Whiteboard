@@ -24,6 +24,7 @@ const RoomSchema = new mongoose.Schema({
   isLocked: { type: Boolean, default: false },
   graceEndsAt: { type: Date, default: null },
   bannedUsers: { type: Array, default: [] },
+  mutedUsers: { type: Array, default: [] },
   previewImage: { type: String, default: null },
   updatedAt: { type: Date, default: Date.now, }
 });

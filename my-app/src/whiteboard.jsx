@@ -1,6 +1,6 @@
 import BoardMenu from './assets/components/Whiteboard/Boardmenu';
 import Chatroom from './assets/components/Whiteboard/ChatRoom';
-import AvatarCursor from './assets/components/Whiteboard/AvatarCursor';
+import AvatarCursor from './assets/components/Whiteboard/components/AvatarCursor';
 import Board from './assets/components/Whiteboard/Board';
 import GraceCountdown from './assets/components/Whiteboard/GraceCountdown';
 import { socket } from './socket';
@@ -64,7 +64,7 @@ function Whiteboard({ user, logout }) {
             transform: "translate(0px, 0px)",
             pointerEvents: "none",
             willChange: "transform",
-            zIndex: 9999
+            zIndex: 9998
           }}
         >
           <AvatarCursor
@@ -75,7 +75,7 @@ function Whiteboard({ user, logout }) {
       ))}
       <BoardMenu logout={logout} userId={user} />
       <GraceCountdown endsAt={graceEndsAt} />
-      <Chatroom />
+      <Chatroom user={user}/>
       <Board user={user} />
     </>
   );

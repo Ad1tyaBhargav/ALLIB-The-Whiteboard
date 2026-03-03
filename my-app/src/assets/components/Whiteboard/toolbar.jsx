@@ -9,6 +9,7 @@ export default function Toolbar({
   clearCanvas,
   isAdmin,
   stageRef,
+  isfreehand
 }) {
   const [position, setPosition] = useState({ x: 500, y: 500 });
   const [dragging, setDragging] = useState(false);
@@ -16,7 +17,7 @@ export default function Toolbar({
 
   const [penOpen, setPenOpen] = useState(false);
   const [shapeOpen, setShapeOpen] = useState(false);
-  const [activeTool, setActiveTool] = useState("pen");
+  const [activeTool, setActiveTool] = useState("pencil"); //change it to pencil
 
   const [color, setColor] = useState("#000000");
   const [size, setSize] = useState(4);
@@ -65,18 +66,49 @@ export default function Toolbar({
   const activateTool = (tool) => {
     setActiveTool(tool);
     onToolChange(tool);
+    setShapeOpen(false);
   };
 
   /* ================= Export ================= */
 
   const exportBoard = () => {
-    if (!stageRef?.current) return;
+    const stage = stageRef.current;
+    if (!stage) return null;
 
-    const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
+    const PREVIEW_WIDTH = 1200;
+    const PREVIEW_HEIGHT = 675;
+
+    // 🔴 RESET TRANSFORM
+    stage.scale({ x: 1, y: 1 });
+    stage.position({ x: 0, y: 0 });
+    stage.batchDraw();
+
+    const background = new window.Konva.Rect({
+      x: 0,
+      y: 0,
+      width: PREVIEW_WIDTH,
+      height: PREVIEW_HEIGHT,
+      fill: "#ffffff",
+    });
+
+    stage.getLayers()[0].add(background);
+    background.moveToBottom();
+    stage.batchDraw();
+
+    const dataURL = stage.toDataURL({
+      x: 0,
+      y: 0,
+      width: PREVIEW_WIDTH,
+      height: PREVIEW_HEIGHT,
+      pixelRatio: 1,
+    });
+
+    background.destroy();
+    stage.batchDraw();
 
     const link = document.createElement("a");
     link.download = "whiteboard.png";
-    link.href = uri;
+    link.href = dataURL;
     link.click();
   };
 
@@ -84,12 +116,11 @@ export default function Toolbar({
 
   return (
     <div
-      id="toolbar"
-      className="position-absolute bg-dark rounded-lg shadow d-flex gap-2 align-items-center"
+      className="position-absolute bg-dark rounded-pill shadow px-3 py-3 d-flex align-items-center justify-content-around"
       style={{
         top: position.y,
         left: position.x,
-        zIndex: 9999,
+        zIndex: 9995,
         cursor: dragging ? "grabbing" : "grab",
       }}
       onMouseDown={handleMouseDown}
@@ -97,22 +128,41 @@ export default function Toolbar({
       {/* Pen */}
       <Button
         icon="pi pi-pencil"
-        className={`${activeTool === "pen" ? "active-tool" : ""} rounded-circle`}
+        className={`${isfreehand ? "active-tool" : ""} rounded-circle`}
         onClick={() => {
           setPenOpen((prev) => !prev);
           setShapeOpen(false);
-          activateTool("pen");
         }}
+        tooltip="Pen Style"
+        tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
       />
+
+      <ColorPicker
+        value={color.replace("#", "")}
+        onChange={(e) => setColor("#" + e.value)}
+        style={{
+          width: "9%",
+          height: "65%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center"
+        }}
+        className="custom-colorpicker"
+        tooltip="Color Pallete"
+        tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
+      />
+
 
       {/* Shape */}
       <Button
         icon="pi pi-stop"
-        className={`${activeTool !== "pen" && activeTool !== "eraser" ? "active-tool" : ""} rounded-circle`}
+        className={`${!isfreehand ? "active-tool" : ""} rounded-circle`}
         onClick={() => {
           setShapeOpen((prev) => !prev);
           setPenOpen(false);
         }}
+        tooltip="Shapes"
+        tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
       />
 
       {/* Eraser */}
@@ -120,6 +170,8 @@ export default function Toolbar({
         icon="pi pi-eraser"
         className={`${activeTool === "eraser" ? "active-tool" : ""} rounded-circle`}
         onClick={() => activateTool("eraser")}
+        tooltip="Earser"
+        tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
       />
 
       {/* Fill Toggle */}
@@ -129,6 +181,7 @@ export default function Toolbar({
         className={`${fillEnabled && "active-tool"} rounded-circle`}
         onClick={() => setFillEnabled((prev) => !prev)}
         tooltip="Toggle Fill"
+        tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
       />
 
       {/* Export */}
@@ -138,6 +191,7 @@ export default function Toolbar({
         className="rounded-circle"
         onClick={exportBoard}
         tooltip="Export Image"
+        tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
       />
 
       {/* Clear (Admin Only) */}
@@ -145,6 +199,7 @@ export default function Toolbar({
         icon="pi pi-trash"
         severity="danger"
         className="rounded-circle"
+        tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
         disabled={!isAdmin}
         onClick={() => {
           if (isAdmin) clearCanvas();
@@ -154,17 +209,24 @@ export default function Toolbar({
 
       {/* Pen Popup */}
       {penOpen && (
-        <div className="popup-menu p-3 d-flex flex-column gap-2">
-          <div className="pen-setting-group">
-            <label>Color</label>
-            <ColorPicker
-              value={color.replace("#", "")}
-              onChange={(e) => setColor("#" + e.value)}
-            />
+        <div className="popup-menu p-3 d-flex flex-column gap-2 m-3">
+
+          <div className=" d-flex gap-2 ">
+            {[{ name: "pencil", icon: "✏️" }, { name: "marker", icon: "🖍️" }, { name: "brush", icon: "🖌️" }, { name: "sketch", icon: "🖊️" }].map(type => (
+              <Button
+                key={type.name}
+                label={type.icon}
+                size="small"
+                tooltip={type.name}
+                tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
+                className={`${activeTool === type.name ? "active-tool" : ""} px-4 py-2 rounded-pill`}
+                onClick={() => activateTool(type.name)}
+              />
+            ))}
           </div>
 
-          <div className="pen-setting-group">
-            <label>Size: {size}</label>
+          <div className="pen-setting-group p-3">
+            <label className="pb-2">Pen Size: {size}</label>
             <Slider
               value={size}
               onChange={(e) => setSize(e.value)}
@@ -173,21 +235,23 @@ export default function Toolbar({
               style={{ width: "120px" }}
             />
           </div>
+
         </div>
       )}
 
       {/* Shape Popup */}
       {shapeOpen && (
-        <div className="popup-menu d-flex gap-2">
+        <div className="popup-menu d-flex gap-2 m-3">
           {[{ name: "line", icon: "---" }, { name: "rectangle", icon: "🔲" }, { name: "circle", icon: "⚪" }, { name: "arrow", icon: "➡️" }].map((shape) => (
-            <div
+            <Button
               key={shape.name}
-              className={`btn btn-light   ${activeTool === (shape.name) ? "shape-active" : ""
-                }`}
+              label={shape.icon}
+              size="small"
+              tooltip={shape.name}
+              tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
+              className={`px-4 py-2 rounded-pill ${activeTool === shape.name ? "shape-active" : ""}`}
               onClick={() => activateTool(shape.name)}
-            >
-              {shape.icon}
-            </div>
+            />
           ))}
         </div>
       )}

@@ -142,6 +142,8 @@ export default function roomHandlers(io, socket,) {
                 admin: cache.players.find(p => p.isAdmin)
             });
 
+            socket.emit("muted-list", room.mutedUsers);
+
             socket.emit("board-sync", cache.boardData);
 
             socket.emit("cursor-sync", Array.from(cursorMap.values()));
@@ -269,8 +271,8 @@ export default function roomHandlers(io, socket,) {
         io.to(roomCode).emit("user-left", { mode: "kicked", userId: targetUserId, username: targetSocket ? targetSocket.user.username : "A user" });
     });
 
-    socket.on("ban-user", async ({ roomCode, targetUserId }) => {
-        const room = await Room.findOne({ roomCode });
+    socket.on("ban-user", async ({ roomCode, targetUserId }) => {  
+        const room = await Room.findOne({ roomCode }).select("adminId").lean();
         if (!room) return;
 
         if (room.adminId !== socket.user.id) return;

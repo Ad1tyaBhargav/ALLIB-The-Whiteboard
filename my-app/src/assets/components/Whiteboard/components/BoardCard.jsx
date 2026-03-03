@@ -1,4 +1,4 @@
-import { Button } from "primereact/button"
+import ConfirmScreen from "./ConfirmScreen";
 import { useRoom } from "../../../context/RoomContext";
 
 export default function BoardCard({ room, deleteRoom }) {
@@ -26,15 +26,19 @@ export default function BoardCard({ room, deleteRoom }) {
                 </div>
             </div>
 
-            <button
-                className="btn btn-outline-danger outline RoomDeleteButton "
-                onClick={(e) => {
-                    e.stopPropagation(); // ❗ prevent join
-                    deleteRoom(room.roomCode);
-                }}
-            >
-                🗑️
-            </button>
+            <div className="RoomDeleteButton">
+
+                <ConfirmScreen
+                    lable={"🗑️"}
+                    header={"DELETING ROOM"}
+                    message={<>
+                        Are sure you want to room: {room.roomCode}? <br />
+                        Drawing will also be deleted.<br />
+                        TIP: Best is to first  export Whiteboard as image.
+                    </>}
+                    onConfirm={() => deleteRoom(room.roomCode)}
+                />
+            </div>
         </div>
     )
 }

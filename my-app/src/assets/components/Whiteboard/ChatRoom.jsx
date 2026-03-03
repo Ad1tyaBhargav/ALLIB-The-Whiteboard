@@ -8,15 +8,13 @@ import "primereact/resources/themes/soho-dark/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
-export default function Chatroom() {
+export default function Chatroom({user}) {
 
     const [showChat, setShowChat] = useState(false);
     const [input, setInput] = useState("");
-    const { chats, isLocked, roomCode } = useRoom()
+    const { chats, isLocked, roomCode, mutedUsers } = useRoom()
 
-    const items = [
-
-    ];
+    const isMuted = mutedUsers.includes(user);
 
     function displayChat() {
         setShowChat(true)
@@ -27,7 +25,7 @@ export default function Chatroom() {
 
         socket.emit("send-message", {
             roomCode,
-            text: input
+            message: input
         });
 
         setInput("");
@@ -49,7 +47,6 @@ export default function Chatroom() {
 
             {/* Floating button */}
             <SpeedDial
-                model={items}
                 radius={120}
                 direction="up"
                 buttonClassName="bg-dark rounded-circle"

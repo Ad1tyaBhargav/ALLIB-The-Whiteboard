@@ -10,6 +10,7 @@ export function RoomProvider({ children, toastRef }) {
   const [chats, setChats] = useState([]);
   const [isLocked, setIsLocked] = useState(false);
   const [graceEndsAt, setGraceEndsAt] = useState(null);
+  const [mutedUsers, setMutedUsers] = useState([]);
   const [staticCursors, setStaticCursors] = useState({});
   const cursorsRef = useRef({})
   const [admin, setAdmin] = useState(null);
@@ -49,6 +50,13 @@ export function RoomProvider({ children, toastRef }) {
         resetRoomState(); // ✅ safe now
       }
     });
+  }
+
+  const controlUser = (action, roomCode, targetUserId) => {
+    socket.emit(`${action}`, {
+      roomCode,
+      targetUserId,
+    })
   }
 
   const resetRoomState = () => {
@@ -224,6 +232,24 @@ export function RoomProvider({ children, toastRef }) {
       });
     };
 
+    const handleMutedList = (list) => {
+      setMutedUsers(list);
+    };
+
+    const handleUserMuted = ({ userId }) => {
+      setMutedUsers(prev => [...prev, userId]);
+
+    };
+
+    const handleUserUnmuted = ({ userId }) => {
+      setMutedUsers(prev => prev.filter(id => id !== userId));
+      showToast("warn","Muted","User got  muted")
+
+    };
+
+    const handleMutedWarning = ({ message }) => {
+      showToast("warn", "Muted", message);
+    };
 
     socket.on("player-list", handlePlayerList);
     socket.on("user-joined", handleUserJoined);
@@ -250,6 +276,11 @@ export function RoomProvider({ children, toastRef }) {
     socket.on("cursor-move", handleCursorMove);
     socket.on("cursor-leave", handleCursorLeave);
 
+    socket.on("muted-list", handleMutedList);
+    socket.on("user-muted", handleUserMuted);
+    socket.on("user-unmuted", handleUserUnmuted);
+    socket.on("muted-warning", handleMutedWarning);
+
     return () => {
       socket.off("player-list", handlePlayerList);
       socket.off("user-joined", handleUserJoined);
@@ -274,6 +305,11 @@ export function RoomProvider({ children, toastRef }) {
       socket.off("cursor-new", handleCursorNew);
       socket.off("cursor-move", handleCursorMove);
       socket.off("cursor-leave", handleCursorLeave);
+
+      socket.off("muted-list", handleMutedList);
+      socket.off("user-muted", handleUserMuted);
+      socket.off("user-unmuted", handleUserUnmuted);
+      socket.off("muted-warning", handleMutedWarning);
     };
   }, []);
 
@@ -296,9 +332,12 @@ export function RoomProvider({ children, toastRef }) {
 
         joinRoom,
         leaveRoom,
+        controlUser,
 
         isLocked,
         graceEndsAt,
+
+        mutedUsers,
 
         resetRoomState,
         showToast

@@ -3,31 +3,8 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  /* 🚫 hides scrollbars */
   height: 100%;
   width: 100%;
-}
-
-#toolbar {
-  position: absolute;
-  /* changed from fixed */
-  display: inline-flex;
-  height: 70px;
-  background-color: #2f3136;
-  border-radius: 40px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 12px;
-  z-index: 9998;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-  cursor: grab;
-  user-select: none;
-  /* prevents accidental text selection while dragging */
-}
-
-#toolbar.dragging {
-  cursor: grabbing;
 }
 
 .popup-menu {
@@ -40,38 +17,6 @@ body {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   animation: fadeIn 0.2s ease-in-out;
   z-index: 1000;
-}
-
-.pen-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
-  position: "absolute";
-  top: "80px";
-  background: "#000000";
-  padding: "12px";
-  border-radius: "8px";
-  box-shadow: "0 2px 8px rgba(0,0,0,0.25)";
-}
-
-.menu-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.shape-option {
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 6px;
-  width: 100%;
-  transition: background 0.2s;
-}
-
-.shape-option:hover {
-  background-color: #50545a;
 }
 
 @keyframes fadeIn {
@@ -109,35 +54,6 @@ body {
   border: none !important;
 }
 
-/* Sub-toolbar */
-.sub-toolbar {
-  position: absolute;
-  bottom: 90px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  background: rgba(40, 40, 40, 0.95);
-  border-radius: 12px;
-  padding: 10px 14px;
-  gap: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-  animation: slideUp 0.2s ease forwards;
-}
-
-.sub-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 160px;
-  color: white;
-  font-size: 0.9rem;
-}
-
-.shape-options {
-  display: flex;
-  flex-direction: row;
-  gap: 6px;
-}
 
 .shape-active {
   background: rgba(88, 101, 242, 0.8) !important;
@@ -155,11 +71,6 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-#toolbar button {
-  background-color: black;
-  border: none;
 }
 
 #avatar-circle {
@@ -286,7 +197,7 @@ body {
   color: white;
   border-radius: 16px;
   position: fixed;
-  z-index: 9998;
+  z-index: 9999;
   padding: 10px;
   margin: 15px;
   animation: slide-in-left 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
@@ -418,4 +329,14 @@ body {
 
 .admin-badge {
   font-size: 1.5rem;
+}
+
+.custom-colorpicker .p-colorpicker-preview {
+  width: 110% !important;
+  height: 110% !important;
+  border-radius: 50% !important;
+}
+
+.custom-colorpicker .p-colorpicker-preview div {
+  border-radius: 50% !important;
 }
