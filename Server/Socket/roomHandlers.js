@@ -1,7 +1,7 @@
 import Room from "../models/Room.js";
 import User from "../models/User.js";
 import { activeUsers, graceTimers, roomCache, roomCursors } from "./state.js";
-import { saveRoomToDB, removePlayerFromCache, generateBrightColor, cleanCursorCache } from "./socket_Func.js";
+import { saveRoomToDB, removePlayerFromRoomCache, generateBrightColor, removePlayerFromCursorCache, lockRoom, cleanRoomCache } from "./socket_Func.js";
 
 export default function roomHandlers(io, socket,) {
 
@@ -43,14 +43,6 @@ export default function roomHandlers(io, socket,) {
             // 🚫 Room full
             if (cache.players.length >= 4) {
                 return safeCallback({ success: false, message: "Room is full (max 4 players)" });
-            }
-
-            // 🔐 Admin lock check
-            if (!isAdmin && room.isLocked) {
-                return safeCallback({
-                    success: false,
-                    message: "Room is locked. Admin disconnected."
-                });
             }
 
             if (isAdmin) {
@@ -183,9 +175,6 @@ export default function roomHandlers(io, socket,) {
             return;
         }
 
-        removePlayerFromCache(roomCode, userId);
-        cleanCursorCache(io, roomCode, userId)
-
         const isAdmin = room.adminId === userId;
 
         if (isAdmin) {
@@ -211,13 +200,15 @@ export default function roomHandlers(io, socket,) {
 
                 await saveRoomToDB(roomCode);
 
-                roomCache.delete(roomCode)
-
+                
                 console.log(`🔒 Room ${roomCode} closed`);
-
+                
                 // ✅ NOW tell frontend it’s safe to reset
                 callback?.({ ok: true });
             }, 700);
+            
+            cleanRoomCache(roomCode)
+            lockRoom(roomCode)
 
             return;
         }
@@ -227,6 +218,9 @@ export default function roomHandlers(io, socket,) {
             { roomCode },
             { $pull: { players: { userId } } }
         );
+
+        removePlayerFromRoomCache(roomCode, userId);
+        removePlayerFromCursorCache(io, roomCode, userId);
 
         socket.leave(roomCode);
         socket.currentRoom = null;
@@ -251,7 +245,8 @@ export default function roomHandlers(io, socket,) {
             { $pull: { players: { userId: targetUserId } } }
         );
 
-        removePlayerFromCache(roomCode, targetUserId);
+        removePlayerFromRoomCache(roomCode, targetUserId);
+        removePlayerFromCursorCache(io, roomCode, userId);
 
         // Find target socket
         const sockets = await io.in(roomCode).fetchSockets();
@@ -271,7 +266,7 @@ export default function roomHandlers(io, socket,) {
         io.to(roomCode).emit("user-left", { mode: "kicked", userId: targetUserId, username: targetSocket ? targetSocket.user.username : "A user" });
     });
 
-    socket.on("ban-user", async ({ roomCode, targetUserId }) => {  
+    socket.on("ban-user", async ({ roomCode, targetUserId }) => {
         const room = await Room.findOne({ roomCode }).select("adminId").lean();
         if (!room) return;
 
@@ -285,7 +280,8 @@ export default function roomHandlers(io, socket,) {
             }
         );
 
-        removePlayerFromCache(roomCode, targetUserId);
+        removePlayerFromRoomCache(roomCode, targetUserId);
+        removePlayerFromCursorCache(io, roomCode, userId);
 
         const sockets = await io.in(roomCode).fetchSockets();
         const targetSocket = sockets.find(

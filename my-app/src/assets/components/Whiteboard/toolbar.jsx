@@ -19,7 +19,7 @@ export default function Toolbar({
   const [shapeOpen, setShapeOpen] = useState(false);
   const [activeTool, setActiveTool] = useState("pencil"); //change it to pencil
 
-  const [color, setColor] = useState("#000000");
+  const [color, setColor] = useState("#ce0202");
   const [size, setSize] = useState(4);
   const [fillEnabled, setFillEnabled] = useState(false);
 
@@ -147,6 +147,7 @@ export default function Toolbar({
           justifyContent: "center",
           alignItems: "center"
         }}
+        inputClassName={""}
         className="custom-colorpicker"
         tooltip="Color Pallete"
         tooltipOptions={{ baseZIndex: 9999, position: 'top' }}

@@ -33,7 +33,6 @@ router.delete("/delete-room/:roomCode", authMiddleware, async (req, res) => {
     const room = await Room.findOne({ roomCode });
 
     if (!room) {
-        console.log("Room Nhi mila")
         return res.status(404).json({ error: "Room not found" });
     }
 

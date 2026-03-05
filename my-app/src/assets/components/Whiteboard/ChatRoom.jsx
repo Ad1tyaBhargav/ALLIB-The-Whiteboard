@@ -36,7 +36,7 @@ export default function Chatroom({user}) {
             <>
                 <div className="chatMsg">
                     <div>{msg.username}</div>
-                    <div>{msg.text}</div>
+                    <div>{msg.message}</div>
                 </div>
             </>
         )

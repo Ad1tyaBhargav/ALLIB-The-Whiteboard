@@ -1,9 +1,9 @@
-import roomHandlers from "./roomHandlers.js";
+import Room from "../models/Room.js";
 import boardHandlers from "./boardHandlers.js";
 import chatHandlers from "./chatHandlers.js";
-import Room from "../models/Room.js";
+import roomHandlers from "./roomHandlers.js";
+import { removePlayerFromCursorCache, removePlayerFromRoomCache, cleanRoomCache } from "./socket_Func.js";
 import { activeUsers, graceTimers, roomCache } from "./state.js";
-import { saveRoomToDB, removePlayerFromCache,cleanCursorCache } from "./socket_Func.js";
 
 export default function socketHandlers(io) {
 
@@ -41,8 +41,7 @@ export default function socketHandlers(io) {
       if (!room) return;
 
       activeUsers.delete(userId);
-      removePlayerFromCache(roomCode, userId);
-      cleanCursorCache(io,roomCode,userId);
+
 
       // 👑 ADMIN DISCONNECTED → START GRACE
       if (room.adminId === userId) {
@@ -51,7 +50,7 @@ export default function socketHandlers(io) {
         await Room.updateOne(
           { roomCode },
           {
-            boardData:cache.boardData,
+            boardData: cache.boardData,
             isLocked: true,
             graceEndsAt: new Date(Date.now() + GRACE_MS)
           }
@@ -78,7 +77,7 @@ export default function socketHandlers(io) {
             { roomCode },
             {
               players: [],
-              isLocked: false,
+              isLocked: true,
               graceEndsAt: null
             }
           );
@@ -90,8 +89,7 @@ export default function socketHandlers(io) {
             s.currentRoom = null;
           }
 
-          roomCache.delete(roomCode);
-          graceTimers.delete(roomCode);
+          cleanRoomCache(roomCode)
         }, GRACE_MS);
 
         graceTimers.set(roomCode, timer);
@@ -101,6 +99,9 @@ export default function socketHandlers(io) {
         { roomCode },
         { $pull: { players: { userId } } }
       );
+
+      removePlayerFromRoomCache(roomCode, userId);
+      removePlayerFromCursorCache(io, roomCode, userId);
 
       socket.to(roomCode).emit("user-left", {
         userId,

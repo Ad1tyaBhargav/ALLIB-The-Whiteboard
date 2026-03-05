@@ -7,7 +7,7 @@ import Toolbar from "./toolbar";
 export default function Board({ user }) {
 
   const [color, setColor] = useState("#000000");
-  const [tool, setTool] = useState("pen");
+  const [tool, setTool] = useState("pencil");
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [selectedId, setSelectedId] = useState(null);
   const [fillEnabled, setFillEnabled] = useState(false);
