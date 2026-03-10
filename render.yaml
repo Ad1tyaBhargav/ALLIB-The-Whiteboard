@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: allib-server
+    runtime: node
+    rootDir: Server
+    buildCommand: npm install
+    startCommand: node index.js
