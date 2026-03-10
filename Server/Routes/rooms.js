@@ -1,9 +1,8 @@
 import express from "express";
 import Room from "../models/Room.js";
-import User from "../models/User.js";
 import { v4 as uuidv4 } from "uuid";
-import jwt from "jsonwebtoken";
 import authMiddleware from "../middleware/auth.js";
+import { deleteRoom } from "../services/Server_Functions.js";
 
 const router = express.Router();
 
@@ -26,9 +25,6 @@ router.post("/create-room", authMiddleware, async (req, res) => {
 
 router.delete("/delete-room/:roomCode", authMiddleware, async (req, res) => {
     const { roomCode } = req.params;
-    const username = req.user.id;
-
-    console.log(`${username} deleted ${roomCode}`)
 
     const room = await Room.findOne({ roomCode });
 
@@ -36,11 +32,11 @@ router.delete("/delete-room/:roomCode", authMiddleware, async (req, res) => {
         return res.status(404).json({ error: "Room not found" });
     }
 
-    if (room.adminId !== username) {
+    if (room.adminId !== req.user.id) {
         return res.status(403).json({ error: "Only admin can delete this room" });
     }
 
-    await Room.deleteOne({ roomCode });
+    deleteRoom(roomCode,true);
 
     return res.json({
         message: "Room deleted successfully",

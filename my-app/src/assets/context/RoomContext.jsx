@@ -29,7 +29,7 @@ export function RoomProvider({ children, toastRef }) {
     });
   };
 
-  function joinRoom(roomCode) {
+  function joinRoom(roomCode,isNew) {
     socket.emit("join-room", { roomCode }, (res) => {
       if (!res.success) {
         localStorage.removeItem("lastRoomCode");
@@ -37,7 +37,7 @@ export function RoomProvider({ children, toastRef }) {
         return;
       }
       localStorage.setItem("lastRoomCode", roomCode);
-      showToast("success", "Room created", `New room created: ${roomCode}`);
+      isNew?showToast("success", "Room created", `Room created: ${roomCode}`):showToast("success", "Room joinned", `Room joinned: ${roomCode}`);
       setRoomCode(roomCode);
     });
 
@@ -104,7 +104,7 @@ export function RoomProvider({ children, toastRef }) {
       showToast(
         "warn",
         "Room closed",
-        "Admin disconnected and did not return"
+        message
       );
       resetRoomState();
     }
@@ -116,6 +116,10 @@ export function RoomProvider({ children, toastRef }) {
     const handleReceiveMessage = (msg) => {
       setChats(prev => [...prev, msg]);
       showToast("info", "New message", `${msg.username} sent a message`);
+    };
+
+    const handleSpamWarning = ({ message }) => {
+      showToast("warn", "Slow down", message);
     };
 
     const handleGraceStart = ({ graceEndsAt }) => {
@@ -243,7 +247,7 @@ export function RoomProvider({ children, toastRef }) {
 
     const handleUserUnmuted = ({ userId }) => {
       setMutedUsers(prev => prev.filter(id => id !== userId));
-      showToast("warn","Muted","User got  muted")
+      showToast("warn", "Muted", "User got  muted")
 
     };
 
@@ -270,6 +274,7 @@ export function RoomProvider({ children, toastRef }) {
     socket.on("room-grace-cancel", handleGraceCancel);
 
     socket.on("receive-message", handleReceiveMessage);
+    socket.on("spam-warning", handleSpamWarning);
 
     socket.on("cursor-sync", handleCursorSync);
     socket.on("cursor-new", handleCursorNew);
@@ -300,6 +305,7 @@ export function RoomProvider({ children, toastRef }) {
       socket.off("room-grace-cancel", handleGraceCancel);
 
       socket.off("receive-message", handleReceiveMessage);
+      socket.off("spam-warning", handleSpamWarning);
 
       socket.off("cursor-sync", handleCursorSync);
       socket.off("cursor-new", handleCursorNew);

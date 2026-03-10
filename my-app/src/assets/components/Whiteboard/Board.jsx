@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Arrow, Circle, Layer, Line, Rect, Stage, Transformer } from "react-konva";
+import { Arrow, Circle, Layer, Line, Rect, Stage, Transformer} from "react-konva";
 import { socket } from "../../../socket";
 import { useRoom } from "../../context/RoomContext";
+import ImgElement from "./components/ImgElement";
 import Toolbar from "./toolbar";
 
 export default function Board({ user }) {
@@ -335,6 +336,28 @@ export default function Board({ user }) {
     return dataURL;
   };
 
+  const handleImageInsert = (src) => {
+    const stage = stageRef.current;
+
+    const imageElement = {
+      id: `image_${Date.now()}_${socket.id}`,
+      type: "image",
+      x: 200,
+      y: 200,
+      width: 300,
+      height: 300,
+      src,
+      createdBy: user
+    };
+
+    setBoardData(prev => [...prev, imageElement]);
+
+    socket.emit("image-add", {
+      roomCode,
+      image: imageElement
+    });
+  };
+
   //keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -425,6 +448,7 @@ export default function Board({ user }) {
         isAdmin={isAdmin}
         stageRef={stageRef}
         isfreehand={isFreehand}
+        onImageImport={handleImageInsert}
       />
 
 
@@ -494,6 +518,15 @@ export default function Board({ user }) {
                     draggable={tool === "select"}
                     onClick={() => setSelectedId(el.id)}
                     onTap={() => setSelectedId(el.id)}
+                  />
+                );
+              case "image":
+                return (
+                  <ImgElement
+                    key={el.id}
+                    el={el}
+                    selectedId={selectedId}
+                    setSelectedId={setSelectedId}
                   />
                 );
               default:

@@ -23,7 +23,7 @@ export default function ConfirmScreen({ lable, header, message, onConfirm }) {
 
     return (
         <>
-            <Button onClick={(e)=>confirm1(e)} label={lable} className="rounded-pill px-3 py-1 btn btn-dark"/>
+            <Button onClick={(e)=>confirm1(e)} label={lable} tooltip={header} tooltipOptions={{ baseZIndex: 9999, position: 'top' }} className="rounded-pill px-3 py-1 btn btn-dark"/>
         </>
     )
 }

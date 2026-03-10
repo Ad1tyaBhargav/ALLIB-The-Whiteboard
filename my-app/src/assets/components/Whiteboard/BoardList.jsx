@@ -57,7 +57,7 @@ export default function BoardList({ close }) {
             );
 
             const { roomCode } = res.data;
-            joinRoom(roomCode)
+            joinRoom(roomCode,true)
             close();
         } catch (err) {
             console.log(err)

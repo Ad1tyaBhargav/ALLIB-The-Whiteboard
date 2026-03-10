@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "primereact/button";
 import { ColorPicker } from "primereact/colorpicker";
 import { Slider } from "primereact/slider";
@@ -9,7 +9,8 @@ export default function Toolbar({
   clearCanvas,
   isAdmin,
   stageRef,
-  isfreehand
+  isfreehand,
+  onImageImport
 }) {
   const [position, setPosition] = useState({ x: 500, y: 500 });
   const [dragging, setDragging] = useState(false);
@@ -22,6 +23,7 @@ export default function Toolbar({
   const [color, setColor] = useState("#ce0202");
   const [size, setSize] = useState(4);
   const [fillEnabled, setFillEnabled] = useState(false);
+  const fileInputRef = useRef(null);
 
   /* ================= Drag ================= */
 
@@ -112,11 +114,23 @@ export default function Toolbar({
     link.click();
   };
 
+  const handleImageUpload = (file) => {
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      onImageImport(e.target.result)
+    };
+
+    reader.readAsDataURL(file);
+  };
+
   /* ================= Render ================= */
 
   return (
     <div
-      className="position-absolute bg-dark rounded-pill shadow px-3 py-3 d-flex align-items-center justify-content-around"
+      className="position-absolute bg-dark rounded-pill shadow px-1 py-3 d-flex align-items-center justify-content-around"
       style={{
         top: position.y,
         left: position.x,
@@ -183,6 +197,22 @@ export default function Toolbar({
         onClick={() => setFillEnabled((prev) => !prev)}
         tooltip="Toggle Fill"
         tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
+      />
+
+      {/* Image */}
+      <input
+        type="file"
+        accept="image/*"
+        hidden
+        ref={fileInputRef}
+        onChange={(e) => handleImageUpload(e.target.files[0])}
+      />
+
+      <Button
+        icon="pi pi-image"
+        className="rounded-circle"
+        onClick={() => fileInputRef.current.click()}
+        tooltip="Import Image"
       />
 
       {/* Export */}

@@ -3,16 +3,17 @@ import { SpeedDial } from "primereact/speeddial";
 import { Button } from "primereact/button";
 import { useRoom } from "../../context/RoomContext";
 import { socket } from "../../../socket";
+import ChatMessage from "./components/ChatMessage";
 
 import "primereact/resources/themes/soho-dark/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
-export default function Chatroom({user}) {
+export default function Chatroom({ user }) {
 
     const [showChat, setShowChat] = useState(false);
     const [input, setInput] = useState("");
-    const { chats, isLocked, roomCode, mutedUsers } = useRoom()
+    const { chats, isLocked, roomCode, mutedUsers, staticCursors } = useRoom()
 
     const isMuted = mutedUsers.includes(user);
 
@@ -31,13 +32,16 @@ export default function Chatroom({user}) {
         setInput("");
     }
 
-    function displayChat(msg) {
+    function displayChat(msg, index) {
         return (
             <>
-                <div className="chatMsg">
-                    <div>{msg.username}</div>
-                    <div>{msg.message}</div>
-                </div>
+                <ChatMessage
+                    key={index*286}
+                    username={msg.username}
+                    message={msg.message}
+                    avatar={staticCursors[msg.userId]?.avatar}
+                    isSelf={msg.userId === user}
+                />
             </>
         )
     }

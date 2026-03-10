@@ -26,7 +26,7 @@ export default function PlayerCard({ player, admin, userId }) {
                 <div className="d-flex gap-3">
                     <ConfirmScreen
                         lable={"🦶"}
-                        header={"KICKING"}
+                        header={"Kick"}
                         message={<>
                             Are you sure you want to kick {player.username}?
                         </>}
@@ -35,7 +35,7 @@ export default function PlayerCard({ player, admin, userId }) {
 
                     <ConfirmScreen
                         lable={"🚫"}
-                        header={"BANNING"}
+                        header={"Ban"}
                         message={<>
                             Are you sure you want to ban {player.username}? <br />
                             Will never be able to join again.
@@ -45,7 +45,7 @@ export default function PlayerCard({ player, admin, userId }) {
 
                     <ConfirmScreen
                         lable={mutedUsers.includes(player.userId) ? "🔇" : "🔊"}
-                        header={"BANNING"}
+                        header={"Mute"}
                         message={mutedUsers.includes(player.userId) ?
                             <>
                                 Are you sure you want to unmute {player.username}? <br />

@@ -7,7 +7,7 @@ export default function BoardCard({ room, deleteRoom }) {
 
     return (
         <div className="board-card" onClick={() => {
-            joinRoom(room.roomCode);
+            joinRoom(room.roomCode, false);
             close();
         }}>
 

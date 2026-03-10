@@ -1,7 +1,7 @@
 import Room from "../models/Room.js";
 import User from "../models/User.js";
+import { cleanRoomCache, generateBrightColor, lockRoom, removePlayerFromCursorCache, removePlayerFromRoomCache, saveRoomToDB } from "../services/Server_Functions.js";
 import { activeUsers, graceTimers, roomCache, roomCursors } from "./state.js";
-import { saveRoomToDB, removePlayerFromRoomCache, generateBrightColor, removePlayerFromCursorCache, lockRoom, cleanRoomCache } from "./socket_Func.js";
 
 export default function roomHandlers(io, socket,) {
 
@@ -200,13 +200,13 @@ export default function roomHandlers(io, socket,) {
 
                 await saveRoomToDB(roomCode);
 
-                
+
                 console.log(`🔒 Room ${roomCode} closed`);
-                
+
                 // ✅ NOW tell frontend it’s safe to reset
                 callback?.({ ok: true });
             }, 700);
-            
+
             cleanRoomCache(roomCode)
             lockRoom(roomCode)
 
@@ -220,7 +220,7 @@ export default function roomHandlers(io, socket,) {
         );
 
         removePlayerFromRoomCache(roomCode, userId);
-        removePlayerFromCursorCache(io, roomCode, userId);
+        removePlayerFromCursorCache(roomCode, userId);
 
         socket.leave(roomCode);
         socket.currentRoom = null;
@@ -246,7 +246,7 @@ export default function roomHandlers(io, socket,) {
         );
 
         removePlayerFromRoomCache(roomCode, targetUserId);
-        removePlayerFromCursorCache(io, roomCode, userId);
+        removePlayerFromCursorCache(roomCode, userId);
 
         // Find target socket
         const sockets = await io.in(roomCode).fetchSockets();
@@ -281,7 +281,7 @@ export default function roomHandlers(io, socket,) {
         );
 
         removePlayerFromRoomCache(roomCode, targetUserId);
-        removePlayerFromCursorCache(io, roomCode, userId);
+        removePlayerFromCursorCache(roomCode, userId);
 
         const sockets = await io.in(roomCode).fetchSockets();
         const targetSocket = sockets.find(

@@ -2,7 +2,7 @@ import Room from "../models/Room.js";
 import boardHandlers from "./boardHandlers.js";
 import chatHandlers from "./chatHandlers.js";
 import roomHandlers from "./roomHandlers.js";
-import { removePlayerFromCursorCache, removePlayerFromRoomCache, cleanRoomCache } from "./socket_Func.js";
+import { cleanRoomCache, removePlayerFromCursorCache, removePlayerFromRoomCache } from "../services/Server_Functions.js";
 import { activeUsers, graceTimers, roomCache } from "./state.js";
 
 export default function socketHandlers(io) {
@@ -70,7 +70,7 @@ export default function socketHandlers(io) {
 
           // 🔥 FORCE CLOSE ROOM
           io.to(roomCode).emit("room-closed", {
-            reason: "ADMIN_LEFT"
+            messagee:"Admin didnt return."
           });
 
           await Room.updateOne(
@@ -101,7 +101,7 @@ export default function socketHandlers(io) {
       );
 
       removePlayerFromRoomCache(roomCode, userId);
-      removePlayerFromCursorCache(io, roomCode, userId);
+      removePlayerFromCursorCache( roomCode, userId);
 
       socket.to(roomCode).emit("user-left", {
         userId,

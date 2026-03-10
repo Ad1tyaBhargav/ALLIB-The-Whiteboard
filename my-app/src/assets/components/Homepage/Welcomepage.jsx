@@ -25,7 +25,7 @@ export default function Welcomepage({ onLogin }) {
                             <div className="container-fluid">
 
                                 <a className="navbar-brand fw-bold" href="#">
-                                   Allib
+                                  <img src="/Imgs/allibLogo.png" alt="" height={20}   />
                                 </a>
 
                                 <button
@@ -57,6 +57,7 @@ export default function Welcomepage({ onLogin }) {
 
 
                     <main className="text-center">
+                        <img src="/Imgs/allibLogo.png" alt="" height={100}  className='mb-5' />
                         <h1>Collaborate with Allib</h1>
                         <p className="lead">
                             Draw, chat and collaborate live with up to 4 users inside secure admin-controlled rooms.

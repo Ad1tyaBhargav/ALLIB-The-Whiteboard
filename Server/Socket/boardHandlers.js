@@ -131,6 +131,16 @@ export default function boardHandlers(io, socket) {
     }
   });
 
+  socket.on("image-add", ({ roomCode, image }) => {
+    const cache = roomCache.get(roomCode);
+    if (!cache) return;
+
+    cache.boardData.push(image);
+
+    console.log("got Image")
+
+    io.to(roomCode).emit("action-added", { action: image });
+  });
 
   socket.on("clear-board", async ({ roomCode }) => {
     await Room.updateOne(

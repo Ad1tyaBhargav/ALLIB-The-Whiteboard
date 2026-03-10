@@ -32,13 +32,13 @@ export default function Login({ onLogin }) {
     }
 
     async function handleConfirm() {
-        if(window.innerWidth < 768) {   
+        if (window.innerWidth < 768) {
             toast.current.show({
                 severity: "warn",
                 summary: "Screen Too Small",
                 detail: "For better experience, please use a device with a larger screen.",
             });
-            return; 
+            return;
         }
 
         const username = user.username
@@ -164,8 +164,8 @@ export default function Login({ onLogin }) {
                         )}
 
                         <div className="d-flex justify-content-center gap-4 mt-4">
-                            <Button label={login ? "Login" : "Sign-Up"} onClick={handleConfirm} text className="btn btn-primary"></Button>
-                            <Button label="Cancel" onClick={(e) => hide(e)} text className="btn btn-primary"></Button>
+                            <Button label={login ? "Login" : "Sign-Up"} onClick={handleConfirm} text className="btn btn-light text-black"></Button>
+                            <Button label="Cancel" onClick={(e) => hide(e)} text className="btn btn-light text-black"></Button>
                         </div>
                     </div>
                 )}

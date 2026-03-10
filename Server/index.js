@@ -65,6 +65,8 @@ app.use("/auth", authRoutes);
 
 app.use("/user",userRoutes);
 
+export default io;
+
 socketHandlers(io)
 
 server.listen(5000, () => console.log("Server running on port 5000"));
