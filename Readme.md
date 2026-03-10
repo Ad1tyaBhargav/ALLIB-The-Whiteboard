@@ -1,18 +1,43 @@
 # 🧩 ALLIB - Real-Time Collaborative Whiteboard
 
-A full-stack real-time collaborative whiteboard application that allows multiple users to draw and interact on the same board simultaneously. The project demonstrates **frontend–backend integration**, **real-time communication**, and **scalable web application design**.
-
+**ALLIB** is a real-time collaborative whiteboard that brings people together on a shared canvas.
+**Draw**, **write**, and **brainstorm** with others in live rooms where every change appears instantly.
+Built to make idea sharing simple, interactive, and visual.
 ---
 
 ## 🚀 Features
 
-* Real-time multi-user drawing and updates
-* Room-based collaboration
-* Frontend built with modern React
-* Backend APIs with Node.js and Express
-* Real-time sync using Socket.IO
-* JWT-based authentication
-* Persistent data storage with MongoDB
+### 🖌️ Drawing Tools
+
+* ✨ Real-time collaborative drawing
+* 🎨 Brush / drawing tool
+* 🧹 Eraser tool
+* 📝 Text tool
+* 🎨 Color picker
+* 📏 Adjustable brush size
+
+### 👥 Collaboration
+
+* 👥 Room-based collaboration
+* 🧑‍🤝‍🧑 Up to 4 users per room
+* ⚡ Live synchronization using Socket.IO
+
+### 💾 Board Management
+
+* 💾 Save board as image
+* 📂 Import existing boards
+
+### 👑 Admin Controls
+
+* 👑 Host controls
+* 🚫 Ban users from room
+* 🦶 Kick users from room
+
+### ⚡ Real-Time Engine
+
+* 🔌 WebSocket communication using Socket.IO
+* 🔄 Instant canvas updates for all users
+* 📡 Event-based synchronization
 
 ---
 
@@ -21,8 +46,10 @@ A full-stack real-time collaborative whiteboard application that allows multiple
 ### Frontend
 
 * React.js
-* HTML, CSS, JavaScript
+* HTML5 Canvas API
 * Bootstrap / Tailwind CSS
+* Socket.IO Client
+* Context API
 
 ### Backend
 
@@ -31,25 +58,73 @@ A full-stack real-time collaborative whiteboard application that allows multiple
 * Socket.IO
 * MongoDB & Mongoose
 * JWT Authentication
-
-### Tools
-
-* Git & GitHub
-* Postman
+* Multer 
 
 ---
 
-## 🧠 Project Overview
-
-This project was built end-to-end, covering both frontend and backend development. The frontend handles the drawing interface and user interactions, while the backend manages authentication, APIs, real-time events, and database operations. Socket.IO is used to synchronize drawing actions across all connected users in real time.
-
----
-
-## 📁 Project Structure (Simplified)
+## Project Structure
 
 ```
 Server/   → APIs, sockets, database logic
 my-app/  → UI components and client-side logic
+```
+
+### Frontend
+
+```
+my-app
+│
+├── public
+├── dist
+│
+├── src
+│   ├── assets
+│   │
+│   ├── components
+│   │
+│   ├── context
+│   │
+│   ├── App.jsx
+│   ├── Homepage.jsx
+│   ├── whiteboard.jsx
+│   ├── socket.js
+│   └── main.jsx
+│
+├── .env
+├── index.html
+├── vite.config.js
+└── package.json
+```
+
+### Backend
+
+```
+Server
+│
+├── middleware
+│   ├── auth.js
+│   └── upload.js
+│
+├── models
+│   ├── Room.js
+│   └── User.js
+│
+├── Routes
+│   ├── auth.js
+│   ├── avatarupload.js
+│   └── rooms.js
+│
+├── services
+│   └── Server_Functions.js
+│
+├── Socket
+│   └── socket events
+│
+├── utils
+│
+├── .env
+├── index.js
+└── package.json
 ```
 
 ---
@@ -70,12 +145,15 @@ npm run dev
 
 ---
 
-## 🎯 Outcome
+## .env setup
 
-* Built a complete full-stack real-time web application
-* Gained hands-on experience with frontend–backend integration
-* Implemented real-time collaboration using WebSockets
-* Strengthened understanding of scalable web architecture
+```
+JWT_SECRET=your_secert
+CLOUDINARY_NAME=your_CLOUDINARY_NAME
+CLOUDINARY_KEY=your_CLOUDINARY_KEY
+CLOUDINARY_SECRET=your_CLOUDINARY_SECRET
+MONGODB_URI="mongodb://localhost:27017/Whiteboard"
+```
 
 ---
 
@@ -92,8 +170,8 @@ npm run dev
 
 **Aditya Bhargav**
 Backend / Full-Stack Developer
-GitHub: [https://github.com/Ad1tyaBhargav](https://github.com/Ad1tyaBhargav)
-LinkedIn: [https://linkedin.com/in/aditya-bhargav](https://linkedin.com/in/aditya-bhargav)
+* GitHub: [https://github.com/Ad1tyaBhargav](https://github.com/Ad1tyaBhargav)
+* LinkedIn: [https://linkedin.com/in/aditya-bhargav](https://linkedin.com/in/aditya-bhargav)
 
 ---
 
