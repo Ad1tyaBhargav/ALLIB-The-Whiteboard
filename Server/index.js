@@ -26,7 +26,23 @@ app.use(cors({
 
 app.options(/.*/, cors());
 
-app.use(express.json())
+app.use(express.json({ limit: "1mb" }));
+app.use((req, res, next) => {
+    const sanitize = (obj) => {
+        if (!obj) return;
+
+        for (let key in obj) {
+            if (key.includes('$') || key.includes('.')) {
+                delete obj[key];
+            } else if (typeof obj[key] === 'object') {
+                sanitize(obj[key]);
+            }
+        }
+    };
+
+    sanitize(req.body);
+    next();
+});
 
 const io = new Server(server, {
     cors: {
@@ -44,7 +60,7 @@ dotenv.config()
 
 io.use((socket, next) => {
     const token = socket.handshake.auth.token;
-    if (!token) return next(new Error("No token")); 
+    if (!token) return next(new Error("No token"));
 
     try {
         const user = jwt.verify(token, process.env.JWT_SECRET);
@@ -63,7 +79,7 @@ const rooms = {}
 
 app.use("/auth", authRoutes);
 
-app.use("/user",userRoutes);
+app.use("/user", userRoutes);
 
 export default io;
 

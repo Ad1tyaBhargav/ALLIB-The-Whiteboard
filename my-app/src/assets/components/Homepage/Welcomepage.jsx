@@ -1,77 +1,60 @@
-import React from 'react'
-import Login from './Login'
+import React from "react";
+import Login from "./Login";
 
 export default function Welcomepage({ onLogin }) {
-    return (
-        <>
-            <div className="position-relative min-vh-100 text-white container-fluid">
+  return (
+    <div className="relative min-h-screen text-white">
 
-                {/* Background Image */}
-                <img
-                    src="/Imgs/WBimg6.png"
-                    alt=""
-                    className="position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
-                    style={{ zIndex: 0 }}
-                />
+      {/* Background Image */}
+      <img
+        src="/Imgs/WBimg6.png"
+        alt="bg"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
 
-                {/* Overlay */}
-                <div
-                    className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex flex-column justify-content-between p-4"
-                    style={{ zIndex: 1 }}
-                >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col justify-between px-6 py-4">
 
-                    <header>
-                        <nav className="navbar navbar-expand-md navbar-dark">
-                            <div className="container-fluid">
+        {/* Header */}
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img src="/Imgs/allibLogo.png" alt="logo" className="h-6" />
+          </div>
 
-                                <a className="navbar-brand fw-bold" href="#">
-                                  <img src="/Imgs/allibLogo.png" alt="" height={20}   />
-                                </a>
+          <nav className="hidden md:flex gap-8 font-semibold text-sm">
+            <a href="https://aditya-dev-six.vercel.app/" className="hover:text-gray-300 transition">Credit</a>
+            <a href="#" className="hover:text-gray-300 transition">Features</a>
+            <a href="#" className="hover:text-gray-300 transition">Contact</a>
+          </nav>
+        </header>
 
-                                <button
-                                    className="navbar-toggler"
-                                    type="button"
-                                    data-bs-toggle="collapse"
-                                    data-bs-target="#navbarContent"
-                                >
-                                    <span className="navbar-toggler-icon"></span>
-                                </button>
+        {/* Main Content */}
+        <main className="flex flex-col items-center text-center max-w-2xl mx-auto">
 
-                                <div className="collapse navbar-collapse" id="navbarContent">
-                                    <ul className="navbar-nav ms-auto mb-2 mb-md-0">
-                                        <li className="nav-item">
-                                            <a className="nav-link fw-bold" href="#">Home</a>
-                                        </li>
-                                        <li className="nav-item">
-                                            <a className="nav-link fw-bold" href="#">Features</a>
-                                        </li>
-                                        <li className="nav-item">
-                                            <a className="nav-link fw-bold" href="#">Contact</a>
-                                        </li>
-                                    </ul>
-                                </div>
+          <img
+            src="/Imgs/allibLogo.png"
+            alt="logo"
+            className="h-30 mb-6"
+          />
 
-                            </div>
-                        </nav>
-                    </header>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+            Collaborate in Real-Time
+          </h1>
 
+          <p className="text-gray-300 text-lg mb-8">
+            Draw, chat, and collaborate live with up to 4 users inside secure,
+            admin-controlled rooms.
+          </p>
 
-                    <main className="text-center">
-                        <img src="/Imgs/allibLogo.png" alt="" height={100}  className='mb-5' />
-                        <h1>Collaborate with Allib</h1>
-                        <p className="lead">
-                            Draw, chat and collaborate live with up to 4 users inside secure admin-controlled rooms.
-                        </p>
-                        <Login onLogin={onLogin} />
-                    </main>
+          <Login onLogin={onLogin} />
 
-                    <footer className="text-center small">
-                        Built with love and care
-                    </footer>
+        </main>
 
-                </div>
-            </div>
-
-        </>
-    )
+        {/* Footer */}
+        <footer className="text-center text-sm text-gray-400">
+          Built with love ❤️
+        </footer>
+      </div>
+    </div>
+  );
 }
