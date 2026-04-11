@@ -246,7 +246,7 @@ export default function roomHandlers(io, socket,) {
         );
 
         removePlayerFromRoomCache(roomCode, targetUserId);
-        removePlayerFromCursorCache(roomCode, userId);
+        removePlayerFromCursorCache(roomCode, targetUserId);
 
         // Find target socket
         const sockets = await io.in(roomCode).fetchSockets();
@@ -281,7 +281,7 @@ export default function roomHandlers(io, socket,) {
         );
 
         removePlayerFromRoomCache(roomCode, targetUserId);
-        removePlayerFromCursorCache(roomCode, userId);
+        removePlayerFromCursorCache(roomCode, targetUserId);
 
         const sockets = await io.in(roomCode).fetchSockets();
         const targetSocket = sockets.find(

@@ -117,7 +117,6 @@ export default function Login({ onLogin }) {
 
     const loginWithGoogle = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
-            console.log("Access Token:", tokenResponse.access_token);
 
             // 🔥 get user info from google
             const userInfo = await fetch(
@@ -128,8 +127,6 @@ export default function Login({ onLogin }) {
                     },
                 }
             ).then((res) => res.json());
-
-            console.log("User Info:", userInfo);
             handleGoogle(userInfo)
 
         },

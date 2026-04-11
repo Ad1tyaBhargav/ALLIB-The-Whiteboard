@@ -3,9 +3,22 @@ import boardHandlers from "./boardHandlers.js";
 import chatHandlers from "./chatHandlers.js";
 import roomHandlers from "./roomHandlers.js";
 import { cleanRoomCache, removePlayerFromCursorCache, removePlayerFromRoomCache } from "../services/Server_Functions.js";
-import { activeUsers, graceTimers, roomCache } from "./state.js";
+import { activeUsers, graceTimers, roomCache, strokeThrottle } from "./state.js";
 
 export default function socketHandlers(io) {
+
+  setInterval(async () => {
+    for (const [roomCode, cache] of roomCache.entries()) {
+      try {
+        await Room.updateOne(
+          { roomCode },
+          { boardData: cache.boardData }
+        );
+      } catch (err) {
+        console.error("Auto-save failed for room:", roomCode);
+      }
+    }
+  }, 10000);
 
   io.on("connection", (socket) => {
     console.log("Socket connected with auth:", socket.user.username);
@@ -14,18 +27,7 @@ export default function socketHandlers(io) {
     boardHandlers(io, socket);
     chatHandlers(io, socket);
 
-    setInterval(async () => {
-      for (const [roomCode, cache] of roomCache.entries()) {
-        try {
-          await Room.updateOne(
-            { roomCode },
-            { boardData: cache.boardData }
-          );
-        } catch (err) {
-          console.error("Auto-save failed for room:", roomCode);
-        }
-      }
-    }, 10000);
+
 
     const GRACE_MS = 30_000;
 
@@ -70,7 +72,7 @@ export default function socketHandlers(io) {
 
           // 🔥 FORCE CLOSE ROOM
           io.to(roomCode).emit("room-closed", {
-            messagee:"Admin didnt return."
+            messagee: "Admin didnt return."
           });
 
           await Room.updateOne(
@@ -101,7 +103,12 @@ export default function socketHandlers(io) {
       );
 
       removePlayerFromRoomCache(roomCode, userId);
-      removePlayerFromCursorCache( roomCode, userId);
+      removePlayerFromCursorCache(roomCode, userId);
+      strokeThrottle.delete(socket.id);
+
+      socket.to(roomCode).emit("cursor-leave", {
+        userId
+      });
 
       socket.to(roomCode).emit("user-left", {
         userId,

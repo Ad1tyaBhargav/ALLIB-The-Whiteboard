@@ -6,14 +6,19 @@ import GraceCountdown from './assets/components/Whiteboard/GraceCountdown';
 import { socket } from './socket';
 import { useEffect } from 'react';
 import { Toast } from 'primereact/toast';
-import { useRef, useMemo } from 'react';
+import { useRef } from 'react';
 import { useRoom } from './assets/context/RoomContext';
 
 
 function Whiteboard({ user, logout }) {
 
   const toast = useRef(null)
+  const viewportRef = useRef({ scale: 1, x: 0, y: 0 });
   const { graceEndsAt, staticCursors, viewport, cursorsRef } = useRoom()
+
+  useEffect(() => {
+    viewportRef.current = viewport;
+  }, [viewport]);
 
   useEffect(() => {
     const handleErrorMessage = (msg) => {
@@ -40,7 +45,8 @@ function Whiteboard({ user, logout }) {
 
         const el = document.getElementById(`cursor-${cursor.userId}`);
         if (el) {
-          el.style.transform = `translate(${cursor.x * viewport.scale + viewport.x}px, ${cursor.y * viewport.scale + viewport.y}px)`;
+          const currentViewport = viewportRef.current;
+          el.style.transform = `translate(${cursor.x * currentViewport.scale + currentViewport.x}px, ${cursor.y * currentViewport.scale + currentViewport.y}px)`;
         }
       });
 
@@ -50,7 +56,7 @@ function Whiteboard({ user, logout }) {
     animate();
 
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [cursorsRef]);
 
   return (
     <>

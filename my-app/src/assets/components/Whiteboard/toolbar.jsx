@@ -7,6 +7,8 @@ export default function Toolbar({
   onPenChange,
   onToolChange,
   clearCanvas,
+  onUndo,
+  onRedo,
   isAdmin,
   stageRef,
   isfreehand,
@@ -63,7 +65,7 @@ export default function Toolbar({
 
   useEffect(() => {
     onPenChange?.({ color, size, fillEnabled });
-  }, [color, size, fillEnabled]);
+  }, [color, size, fillEnabled, onPenChange]);
 
   const activateTool = (tool) => {
     setActiveTool(tool);
@@ -222,6 +224,22 @@ export default function Toolbar({
         className="rounded-circle"
         onClick={exportBoard}
         tooltip="Export Image"
+        tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
+      />
+
+      <Button
+        icon="pi pi-undo"
+        className="rounded-circle"
+        onClick={onUndo}
+        tooltip="Undo"
+        tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
+      />
+
+      <Button
+        icon="pi pi-refresh"
+        className="rounded-circle"
+        onClick={onRedo}
+        tooltip="Redo"
         tooltipOptions={{ baseZIndex: 9999, position: 'top' }}
       />
 

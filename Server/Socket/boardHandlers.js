@@ -1,6 +1,8 @@
+import e from "cors";
 import Room from "../models/Room.js";
 import cloudinary from "../utils/cloudinary.js"
-import { roomCache, roomCursors } from "./state.js";
+import { roomCache, roomCursors, strokeThrottle } from "./state.js";
+import { generateBrightColor } from "../services/Server_Functions.js";
 
 export default function boardHandlers(io, socket) {
   // stroke starts (DO NOT save to DB)
@@ -10,6 +12,16 @@ export default function boardHandlers(io, socket) {
 
   // stroke updates (DO NOT save to DB)
   socket.on("stroke-update", ({ roomCode, id, points }) => {
+    const now = Date.now();
+    const key = socket.id;
+
+    if (strokeThrottle.has(key)) {
+      const last = strokeThrottle.get(key);
+      if (now - last < 20) return; // limit ~50fps
+    }
+
+    strokeThrottle.set(key, now);
+
     socket.to(roomCode).emit("stroke-update", { id, points });
   });
 
@@ -86,8 +98,19 @@ export default function boardHandlers(io, socket) {
     if (!cursorMap) return;
 
     const userId = socket.user.id;
-    const cursor = cursorMap.get(userId);
-    if (!cursor) return;
+    let cursor = cursorMap.get(userId);
+    const cursorCount = cursorMap.size;
+    if (!cursor) {
+      cursor = {
+        userId,
+        x,
+        y,
+        color: generateBrightColor(cursorCount)
+      };
+      cursorMap.set(userId, cursor);
+
+      socket.to(roomCode).emit("cursor-new", cursor);
+    }
 
     cursor.x = x;
     cursor.y = y;
@@ -135,7 +158,12 @@ export default function boardHandlers(io, socket) {
     const cache = roomCache.get(roomCode);
     if (!cache) return;
 
+    const userStack = cache.userStacks.get(socket.user.id);
+    if (!userStack) return;
+
     cache.boardData.push(image);
+    userStack.undoStack.push(image);
+    userStack.redoStack = [];
 
     console.log("got Image")
 
@@ -151,4 +179,14 @@ export default function boardHandlers(io, socket) {
     io.to(roomCode).emit("clear-board");
   });
 
+  socket.on("cursor-leave", ({ roomCode }) => {
+    const cursorMap = roomCursors.get(roomCode);
+    if (!cursorMap) return;
+
+    const userId = socket.user.id;
+
+    cursorMap.delete(userId);
+
+    socket.to(roomCode).emit("cursor-leave", { userId });
+  });
 }

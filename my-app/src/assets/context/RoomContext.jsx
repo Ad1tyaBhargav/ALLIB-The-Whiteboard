@@ -1,7 +1,12 @@
-import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { socket } from "../../socket";
 
 const RoomContext = createContext();
+const DEFAULT_VIEWPORT = {
+  scale: 1,
+  x: 0,
+  y: 0,
+};
 
 export function RoomProvider({ children, toastRef }) {
   const [roomCode, setRoomCode] = useState(null);
@@ -12,36 +17,35 @@ export function RoomProvider({ children, toastRef }) {
   const [graceEndsAt, setGraceEndsAt] = useState(null);
   const [mutedUsers, setMutedUsers] = useState([]);
   const [staticCursors, setStaticCursors] = useState({});
-  const cursorsRef = useRef({})
+  const cursorsRef = useRef({});
   const [admin, setAdmin] = useState(null);
-  const [viewport, setViewport] = useState({
-    scale: 1,
-    x: 0,
-    y: 0,
-  });
+  const [viewport, setViewport] = useState(DEFAULT_VIEWPORT);
 
-  const showToast = (severity, summary, detail) => {
+  const showToast = useCallback((severity, summary, detail) => {
     toastRef?.current?.show({
       severity,
       summary,
       detail,
       life: 3000
     });
-  };
+  }, [toastRef]);
 
-  function joinRoom(roomCode,isNew) {
+  function joinRoom(roomCode, isNew) {
     socket.emit("join-room", { roomCode }, (res) => {
       if (!res.success) {
         localStorage.removeItem("lastRoomCode");
-        showToast("danger", "Unable to connect", `${res.message} `);
+        showToast("error", "Unable to connect", res.message);
         return;
       }
+
       localStorage.setItem("lastRoomCode", roomCode);
-      isNew?showToast("success", "Room created", `Room created: ${roomCode}`):showToast("success", "Room joinned", `Room joinned: ${roomCode}`);
+      showToast(
+        "success",
+        isNew ? "Room created" : "Room joined",
+        `${isNew ? "Room created" : "Room joined"}: ${roomCode}`
+      );
       setRoomCode(roomCode);
     });
-
-
   }
 
   function leaveRoom() {
@@ -56,28 +60,31 @@ export function RoomProvider({ children, toastRef }) {
     socket.emit(`${action}`, {
       roomCode,
       targetUserId,
-    })
-  }
+    });
+  };
 
-  const resetRoomState = () => {
+  const resetRoomState = useCallback(() => {
     setRoomCode(null);
     setPlayers([]);
     setBoardData([]);
     setChats([]);
     setIsLocked(false);
     setGraceEndsAt(null);
+    setMutedUsers([]);
     setStaticCursors({});
+    cursorsRef.current = {};
     setAdmin(null);
+    setViewport(DEFAULT_VIEWPORT);
 
     localStorage.removeItem("lastRoomCode");
-  };
+  }, []);
 
   useEffect(() => {
     if (!socket) return;
 
     const handlePlayerList = ({ players, admin }) => {
       setPlayers(players);
-      setAdmin(admin.userId);
+      setAdmin(admin?.userId ?? null);
     };
 
     const handleUserJoined = (player) => {
@@ -100,17 +107,17 @@ export function RoomProvider({ children, toastRef }) {
       resetRoomState();
     };
 
-    const handleRoomClosed = ({ message }) => {
+    const handleRoomClosed = ({ message, messagee }) => {
       showToast(
         "warn",
         "Room closed",
-        message
+        message ?? messagee ?? "The room was closed."
       );
       resetRoomState();
-    }
+    };
 
     const handleBoardSync = (data) => {
-      setBoardData(data);
+      setBoardData(Array.isArray(data) ? data : []);
     };
 
     const handleReceiveMessage = (msg) => {
@@ -126,18 +133,14 @@ export function RoomProvider({ children, toastRef }) {
       setIsLocked(true);
       setGraceEndsAt(new Date(graceEndsAt));
 
-      if (socket.isAdmin) {
-        socket.emit("request-board-preview");
-      }
-
       showToast("warn", "Admin disconnected", "Room locked temporarily");
-    }
+    };
 
     const handleGraceCancel = () => {
       setIsLocked(false);
       setGraceEndsAt(null);
       showToast("success", "Admin returned", "Room unlocked");
-    }
+    };
 
     const handleStrokeStart = ({ stroke }) => {
       setBoardData(prev => [...prev, stroke]);
@@ -160,13 +163,14 @@ export function RoomProvider({ children, toastRef }) {
     };
 
     const handleActionUndo = (actionId) => {
-
-      console.log(actionId)
       setBoardData(prev => prev.filter(obj => obj.id !== actionId));
     };
 
     const handleActionRedo = (action) => {
-      setBoardData(prev => [...prev, action]);
+      setBoardData(prev => {
+        const filtered = prev.filter(el => el.id !== action.id);
+        return [...filtered, action];
+      });
     };
 
     const handleCursorSync = (cursorList) => {
@@ -192,7 +196,7 @@ export function RoomProvider({ children, toastRef }) {
 
       cursorsRef.current = liveData;
       setStaticCursors(staticData);
-    }
+    };
 
     const handleCursorNew = (cursor) => {
 
@@ -237,22 +241,26 @@ export function RoomProvider({ children, toastRef }) {
     };
 
     const handleMutedList = (list) => {
-      setMutedUsers(list);
+      setMutedUsers(Array.from(new Set(list)));
     };
 
     const handleUserMuted = ({ userId }) => {
-      setMutedUsers(prev => [...prev, userId]);
-
+      setMutedUsers(prev => (
+        prev.includes(userId) ? prev : [...prev, userId]
+      ));
     };
 
     const handleUserUnmuted = ({ userId }) => {
       setMutedUsers(prev => prev.filter(id => id !== userId));
-      showToast("warn", "Muted", "User got  muted")
-
+      showToast("info", "Unmuted", "User can chat again.");
     };
 
     const handleMutedWarning = ({ message }) => {
       showToast("warn", "Muted", message);
+    };
+
+    const handleClearBoard = () => {
+      setBoardData([]);
     };
 
     socket.on("player-list", handlePlayerList);
@@ -266,9 +274,9 @@ export function RoomProvider({ children, toastRef }) {
     socket.on("stroke-start", handleStrokeStart);
     socket.on("stroke-update", handleStrokeUpdate);
     socket.on("action-added", handleActionAdded);
-    socket.on("action-added", handleActionAdded);
     socket.on("action-undo", handleActionUndo);
     socket.on("action-redo", handleActionRedo);
+    socket.on("clear-board", handleClearBoard);
 
     socket.on("room-grace-start", handleGraceStart);
     socket.on("room-grace-cancel", handleGraceCancel);
@@ -300,6 +308,7 @@ export function RoomProvider({ children, toastRef }) {
       socket.off("action-added", handleActionAdded);
       socket.off("action-undo", handleActionUndo);
       socket.off("action-redo", handleActionRedo);
+      socket.off("clear-board", handleClearBoard);
 
       socket.off("room-grace-start", handleGraceStart);
       socket.off("room-grace-cancel", handleGraceCancel);
@@ -317,7 +326,7 @@ export function RoomProvider({ children, toastRef }) {
       socket.off("user-unmuted", handleUserUnmuted);
       socket.off("muted-warning", handleMutedWarning);
     };
-  }, []);
+  }, [resetRoomState, showToast]);
 
   return (
     <RoomContext.Provider
@@ -354,4 +363,5 @@ export function RoomProvider({ children, toastRef }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useRoom = () => useContext(RoomContext);
