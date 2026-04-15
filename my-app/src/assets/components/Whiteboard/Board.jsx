@@ -9,6 +9,10 @@ const MIN_DISTANCE = 3;
 const EMIT_INTERVAL = 50;
 const RENDER_INTERVAL = 50;
 const CURSOR_EMIT_INTERVAL = 30;
+const getViewportSize = () => ({
+  width: Math.round(window.visualViewport?.width || window.innerWidth),
+  height: Math.round(window.visualViewport?.height || window.innerHeight),
+});
 
 export default function Board({ user }) {
   const { boardData, setBoardData, roomCode, isLocked, admin } = useRoom();
@@ -27,6 +31,7 @@ export default function Board({ user }) {
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [fillEnabled, setFillEnabled] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
+  const [stageSize, setStageSize] = useState(getViewportSize);
 
   const isFreehand = ["pencil", "marker", "brush", "sketch", "eraser"].includes(tool);
   const isAdmin = user === admin;
@@ -50,6 +55,23 @@ export default function Board({ user }) {
     transformer?.nodes([]);
     transformer?.getLayer()?.batchDraw();
   }, [selectedId, boardData]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const nextSize = getViewportSize();
+      setStageSize(nextSize);
+      document.documentElement.style.setProperty("--app-height", `${nextSize.height}px`);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    window.visualViewport?.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.visualViewport?.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   const getPoint = () => {
     const pointer = stageRef.current?.getPointerPosition();
@@ -440,7 +462,15 @@ export default function Board({ user }) {
   };
 
   return (
-    <div style={{ width: "100vw", height: "100vh", background: "#fff", overflow: "hidden" }}>
+    <div
+      style={{
+        width: "100vw",
+        height: stageSize.height,
+        background: "#fff",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
       <Toolbar
         onPenChange={({ color, size, fillEnabled }) => {
           if (color !== undefined) setColor(color);
@@ -459,12 +489,18 @@ export default function Board({ user }) {
 
       <Stage
         ref={stageRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
+        width={stageSize.width}
+        height={stageSize.height}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        style={{ cursor: isLocked ? "not-allowed" : tool === "select" ? "pointer" : "crosshair" }}
+        onTouchStart={handleMouseDown}
+        onTouchMove={handleMouseMove}
+        onTouchEnd={handleMouseUp}
+        style={{
+          cursor: isLocked ? "not-allowed" : tool === "select" ? "pointer" : "crosshair",
+          touchAction: "none",
+        }}
       >
         <Layer>
           {boardData.map(renderElement)}

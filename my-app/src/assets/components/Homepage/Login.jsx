@@ -142,7 +142,7 @@ export default function Login({ onLogin }) {
             {/* Trigger */}
             <button
                 onClick={() => setVisible(true)}
-                className="px-6 py-2 bg-white text-black font-semibold rounded-xl hover:bg-gray-200 transition"
+                className="w-full max-w-xs px-6 py-3 bg-white text-black font-semibold rounded-xl hover:bg-gray-200 transition"
             >
                 Get Started
             </button>
@@ -153,10 +153,11 @@ export default function Login({ onLogin }) {
                 onHide={() => setVisible(false)}
                 modal
                 className="w-full max-w-md"
+                breakpoints={{ "960px": "72vw", "640px": "96vw" }}
                 contentClassName="p-0 bg-transparent"
                 showHeader={false}
             >
-                <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-white shadow-2xl">
+                <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5 md:p-6 text-white shadow-2xl">
 
                     {/* Close Button */}
                     <button

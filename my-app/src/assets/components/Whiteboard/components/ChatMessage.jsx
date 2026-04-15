@@ -32,7 +32,7 @@ export default function ChatMessage({
 
             <div
                 style={{
-                    maxWidth: "60%",
+                    maxWidth: "min(78%, 320px)",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: isSelf ? "flex-end" : "flex-start"

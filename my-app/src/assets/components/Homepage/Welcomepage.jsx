@@ -3,7 +3,7 @@ import Login from "./Login";
 
 export default function Welcomepage({ onLogin }) {
   return (
-    <div className="relative min-h-screen text-white">
+    <div className="relative text-white" style={{ minHeight: "100dvh" }}>
 
       {/* Background Image */}
       <img
@@ -13,10 +13,10 @@ export default function Welcomepage({ onLogin }) {
       />
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col justify-between px-6 py-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col justify-between px-4 py-4 md:px-6" style={{ minHeight: "100dvh" }}>
 
         {/* Header */}
-        <header className="flex items-center justify-between">
+        <header className="flex flex-wrap items-center justify-center gap-4 md:justify-between">
           <div className="flex items-center gap-2">
             <img src="/Imgs/allibLogo.png" alt="logo" className="h-6" />
           </div>
@@ -29,19 +29,19 @@ export default function Welcomepage({ onLogin }) {
         </header>
 
         {/* Main Content */}
-        <main className="flex flex-col items-center text-center max-w-2xl mx-auto">
+        <main className="flex flex-col items-center text-center max-w-2xl mx-auto w-full py-8 md:py-12">
 
           <img
             src="/Imgs/allibLogo.png"
             alt="logo"
-            className="h-30 mb-6"
+            className="w-40 max-w-full mb-6 md:w-52"
           />
 
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+          <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
             Collaborate in Real-Time
           </h1>
 
-          <p className="text-gray-300 text-lg mb-8">
+          <p className="text-gray-300 text-base md:text-lg mb-8 px-2">
             Draw, chat, and collaborate live with up to 4 users inside secure,
             admin-controlled rooms.
           </p>

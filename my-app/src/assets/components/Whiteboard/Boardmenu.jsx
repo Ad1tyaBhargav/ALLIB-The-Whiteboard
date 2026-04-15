@@ -50,7 +50,19 @@ export default function BoardMenu({ logout,userId }) {
     return (
         <>
             <ConfirmDialog />
-            <SpeedDial model={items} radius={120} type="quarter-circle" direction="down-right" style={{ top: 20, left: 20 }} buttonClassName="bg-dark rounded-circle" />
+            <SpeedDial
+                model={items}
+                radius={120}
+                type="quarter-circle"
+                direction="down-right"
+                style={{
+                    top: "calc(env(safe-area-inset-top, 0px) + 12px)",
+                    left: "max(12px, env(safe-area-inset-left, 0px))",
+                    position: "fixed",
+                    zIndex: 9997
+                }}
+                buttonClassName="bg-dark rounded-circle"
+            />
             {showList && <BoardList close={closeList} />}
             {showRoom && <RoomUsers close={closeList} userId={userId} />}
         </>

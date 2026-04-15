@@ -1,7 +1,7 @@
 import ConfirmScreen from "./ConfirmScreen";
 import { useRoom } from "../../../context/RoomContext";
 
-export default function BoardCard({ room, deleteRoom }) {
+export default function BoardCard({ room, deleteRoom, close }) {
 
     const { joinRoom } = useRoom()
 
